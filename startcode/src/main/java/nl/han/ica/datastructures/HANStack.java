@@ -10,22 +10,18 @@ public class HANStack<T> implements IHANStack<T> {
 
     @Override
     public void push(T value) {
-        list.add(lastIndex(), value);
+        list.add(list.size(), value);
     }
 
     @Override
     public T pop() {
-        T value = list.get(lastIndex());
-        list.remove(lastIndex());
+        T value = list.get(list.size() - 1);
+        list.remove(list.size() - 1);
         return value;
     }
 
     @Override
     public T peek() {
-        return list.get(lastIndex());
-    }
-
-    private int lastIndex() {
-        return list.size() - 1;
+        return list.get(list.size() - 1);
     }
 }

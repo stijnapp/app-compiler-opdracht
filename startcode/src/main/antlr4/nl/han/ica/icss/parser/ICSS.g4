@@ -15,7 +15,7 @@ PIXELSIZE: [0-9]+ 'px';
 PERCENTAGE: [0-9]+ '%';
 SCALAR: [1-9][0-9]* | '0';
 // Color value takes precedence over id idents
-COLOR: '#' [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f];
+COLOR: '#' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F];
 
 // Specific identifiers for id's and css classes
 ID_IDENT: '#' [a-z0-9\-]+;
@@ -41,7 +41,7 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 //--- PARSER: ---
-stylesheet  : (stylerule | assignment)* EOF;
+stylesheet  : (assignment | stylerule)* EOF;
 
 // variable assignment
 assignment  : name=variable ASSIGNMENT_OPERATOR expression SEMICOLON;
@@ -52,10 +52,10 @@ selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : property=LOWER_IDENT COLON expression SEMICOLON;
 
 // expressions - left-recursive, so MUL has higher precedence than PLUS and MIN
-expression  : expression MUL expression
-            | expression (PLUS | MIN) expression
-            | literal
-            | variable
+expression  : expression MUL expression #OperationExpression
+            | expression (PLUS | MIN) expression #OperationExpression
+            | literal #LiteralExpression
+            | variable #VariableExpression
             ;
 
 // if-else
@@ -63,6 +63,7 @@ ifclause    : IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE (declar
 elseclause  : ELSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE;
 condition   : (bool | literal | variable);
 
+// basics
 variable    : CAPITAL_IDENT;
 literal     : bool
             | PIXELSIZE
