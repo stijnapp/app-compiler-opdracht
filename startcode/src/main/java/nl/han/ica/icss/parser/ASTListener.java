@@ -1,8 +1,5 @@
 package nl.han.ica.icss.parser;
 
-import java.util.Stack;
-
-
 import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
@@ -19,13 +16,15 @@ import nl.han.ica.icss.ast.selectors.TagSelector;
  */
 public class ASTListener extends ICSSBaseListener {
 
-    // Accumulator attributes:
-    private AST ast;
+    // The AST itself, that's being built while traversing the parse tree
+    private final AST ast;
 
-    // Use this to keep track of the parent nodes when recursively traversing the ast
-    private IHANStack<ASTNode> currentContainer;
+    // Keeps track of the parent nodes when recursively traversing the AST
+    // The current parent node is always on top
+    private final IHANStack<ASTNode> currentContainer;
 
     public ASTListener() {
+        // initialize the AST and the stack
         ast = new AST();
         currentContainer = new HANStack<>();
     }
@@ -36,8 +35,12 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
+        // stylesheet is the root of the AST, so:
+        // create new AST node
         Stylesheet stylesheet = new Stylesheet();
+        // set the root of the AST to this node
         ast.setRoot(stylesheet);
+        // push it to the stack to become the current (and only) parent node
         currentContainer.push(stylesheet);
     }
 
@@ -48,24 +51,36 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterAssignment(ICSSParser.AssignmentContext ctx) {
+        // for *most* declarations, create a new AST node, add it to the current parent node, and push it to the stack (to become the new parent node)
+        // so for the assignment:
+        // create new AST node
         VariableAssignment assignment = new VariableAssignment();
+        // add it to the current parent node (which is on top of the stack)
         currentContainer.peek().addChild(assignment);
+        // push this node to the stack to become the new parent node
         currentContainer.push(assignment);
+
+        // and basically repeat that for all other rules, except for variables, literals and selectors
+        // those are the bottom nodes, so they only need to be added to the current parent and move on
     }
 
     @Override
     public void exitAssignment(ICSSParser.AssignmentContext ctx) {
+        // after visiting the children of this node, pop it off the stack to make this node's parent the current parent again
         currentContainer.pop();
     }
 
     @Override
     public void enterVariable(ICSSParser.VariableContext ctx) {
         VariableReference variableReference = new VariableReference(ctx.getText());
+        // because variables are the bottom nodes, we don't push them to the stack, just add them to the current parent node
+        // same for literals and selectors
         currentContainer.peek().addChild(variableReference);
     }
 
     @Override
     // OperationExpression is a subrule of expression, defined in the grammar with `#OperationExpression`
+    // still, it has multiple operators (+, -, *), so we need to manually check which one it is.
     public void enterOperationExpression(ICSSParser.OperationExpressionContext ctx) {
         Operation operation;
         // `.op` is possible due to defining it in the grammar with `op=...`
@@ -80,7 +95,8 @@ public class ASTListener extends ICSSBaseListener {
                 operation = new MultiplyOperation();
                 break;
             default:
-                // TODO: read something about error objects. forgot though, so exception for now
+                // This shouldn't be reached, because the grammar should only allow +, - and *
+                // but just to be sure, throw an exception (with line and position, because it's cool that that's possible with ANTLR)
                 throw new RuntimeException("Unknown operator: " + ctx.op.getText() + " at line " + ctx.op.getLine() + ", position " + ctx.op.getCharPositionInLine());
         }
         currentContainer.peek().addChild(operation);
@@ -95,6 +111,8 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void enterLiteral(ICSSParser.LiteralContext ctx) {
         Literal literal;
+        // Kind of the same deal as with the operation expression
+        // there are multiple types of literals, so we need to check which one it is
         if (ctx.bool() != null) {
             literal = new BoolLiteral(ctx.bool().getText().equals("TRUE"));
         } else if (ctx.PIXELSIZE() != null) {
@@ -106,7 +124,6 @@ public class ASTListener extends ICSSBaseListener {
         } else if (ctx.COLOR() != null) {
             literal = new ColorLiteral(ctx.COLOR().getText());
         } else {
-            // TODO: same as in enterOperationExpression. replace with error object?
             throw new RuntimeException("Unknown literal: " + ctx.getText() + " at line " + ctx.getStart().getLine() + ", position " + ctx.getStart().getCharPositionInLine());
         }
         currentContainer.peek().addChild(literal);
@@ -134,7 +151,6 @@ public class ASTListener extends ICSSBaseListener {
         } else if (ctx.LOWER_IDENT() != null) {
             selector = new TagSelector(ctx.LOWER_IDENT().getText());
         } else {
-            // TODO: check thing about erorr objects
             throw new RuntimeException("Unknown selector: " + ctx.getText() + " at line " + ctx.getStart().getLine() + ", position " + ctx.getStart().getCharPositionInLine());
         }
         currentContainer.peek().addChild(selector);
