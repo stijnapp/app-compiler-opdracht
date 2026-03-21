@@ -44,24 +44,23 @@ ASSIGNMENT_OPERATOR: ':=';
 stylesheet  : (assignment | stylerule)* EOF;
 
 // variable assignment
-assignment  : name=variable ASSIGNMENT_OPERATOR expression SEMICOLON;
+assignment  : variable ASSIGNMENT_OPERATOR expression SEMICOLON;
 
 // style rule
 stylerule   : selector OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE;
 selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
-declaration : property=LOWER_IDENT COLON expression SEMICOLON;
+declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
 // expressions - left-recursive, so MUL has higher precedence than PLUS and MIN
-expression  : expression MUL expression #OperationExpression
-            | expression (PLUS | MIN) expression #OperationExpression
+expression  : expression op=MUL expression #OperationExpression
+            | expression op=(PLUS | MIN) expression #OperationExpression
             | literal #LiteralExpression
             | variable #VariableExpression
             ;
 
 // if-else
-ifclause    : IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE elseclause?;
+ifclause    : IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE elseclause?;
 elseclause  : ELSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE;
-condition   : (bool | literal | variable);
 
 // basics
 variable    : CAPITAL_IDENT;
