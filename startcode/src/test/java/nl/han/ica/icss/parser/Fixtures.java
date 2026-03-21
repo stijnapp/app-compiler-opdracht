@@ -181,7 +181,7 @@ public class Fixtures {
         );
         /*
             #menu {
-        	width: ParWidth + 2 * 10px;
+        	width: ParWidth + 20px;
             }
         */
         stylesheet.addChild((new Stylerule())
@@ -189,11 +189,10 @@ public class Fixtures {
                 .addChild((new Declaration("width"))
                         .addChild((new AddOperation())
                                 .addChild(new VariableReference("ParWidth"))
-                                .addChild((new MultiplyOperation())
-                                        .addChild(new ScalarLiteral("2"))
-                                        .addChild(new PixelLiteral("10px"))
-
-                                ))));
+                                .addChild(new PixelLiteral("20px"))
+                        )
+                )
+        );
         /*
             .menu {
 	            color: #000000;
@@ -268,9 +267,11 @@ public class Fixtures {
                                 .addChild(new ColorLiteral("#124532"))))
                         .addChild((new IfClause())
                                 .addChild(new VariableReference("UseLinkColor"))
-                                .addChild(new Declaration("background-color").addChild(new VariableReference("LinkColor")))
+                                .addChild(new Declaration("background-color")
+                                        .addChild(new VariableReference("LinkColor")))
                                 .addChild((new ElseClause())
-                                        .addChild(new Declaration("background-color").addChild(new ColorLiteral("#000000")))
+                                        .addChild(new Declaration("background-color")
+                                                .addChild(new ColorLiteral("#000000")))
 
                                 )
                         ))
@@ -290,7 +291,7 @@ public class Fixtures {
         );
         /*
             #menu {
-        	width: ParWidth + 20px;
+        	width: ParWidth + 2 * 10px;
             }
         */
         stylesheet.addChild((new Stylerule())
@@ -298,10 +299,11 @@ public class Fixtures {
                 .addChild((new Declaration("width"))
                         .addChild((new AddOperation())
                                 .addChild(new VariableReference("ParWidth"))
-                                .addChild(new PixelLiteral("20px"))
-                        )
-                )
-        );
+                                .addChild((new MultiplyOperation())
+                                        .addChild(new ScalarLiteral("2"))
+                                        .addChild(new PixelLiteral("10px"))
+
+                                ))));
         /*
 
 

@@ -96,7 +96,7 @@ public class ASTListener extends ICSSBaseListener {
     public void enterLiteral(ICSSParser.LiteralContext ctx) {
         Literal literal;
         if (ctx.bool() != null) {
-            literal = new BoolLiteral(ctx.bool().getText().equals("true"));
+            literal = new BoolLiteral(ctx.bool().getText().equals("TRUE"));
         } else if (ctx.PIXELSIZE() != null) {
             literal = new PixelLiteral(Integer.parseInt(ctx.PIXELSIZE().getText().replace("px", "")));
         } else if (ctx.PERCENTAGE() != null) {

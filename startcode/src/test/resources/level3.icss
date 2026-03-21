@@ -21,11 +21,10 @@ a {
 }
 
 #menu {
-	width: ParWidth + 20px;
+	width: ParWidth + 2 * 10px;
 }
 
 .menu {
 	color: #000000;
     background-color: LinkColor;
-
 }
