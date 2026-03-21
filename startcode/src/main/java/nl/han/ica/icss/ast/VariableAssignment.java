@@ -8,49 +8,49 @@ import java.util.Objects;
  *
  */
 public class VariableAssignment extends ASTNode {
-	
-	public VariableReference name;
-	public Expression expression;
 
-	@Override
-	public String getNodeLabel() {
-		return "VariableAssignment (" + name.name + ")";
-	}
+    public VariableReference name;
+    public Expression expression;
 
-	@Override
-	public ASTNode addChild(ASTNode child) {
-		if(name == null) {
-			name = (VariableReference) child;
-		} else if(expression == null) {
-			expression = (Expression) child;
-		}
+    @Override
+    public String getNodeLabel() {
+        return "VariableAssignment (" + name.name + ")";
+    }
 
-		return this;
-	}
+    @Override
+    public ASTNode addChild(ASTNode child) {
+        if (name == null) {
+            name = (VariableReference) child;
+        } else if (expression == null) {
+            expression = (Expression) child;
+        }
 
-	@Override
-	public ArrayList<ASTNode> getChildren() {
+        return this;
+    }
 
-		ArrayList<ASTNode> children = new ArrayList<>();
-		if(name != null)
-			children.add(name);
-		if(expression != null)
-			children.add(expression);
-		return children;
-	}
+    @Override
+    public ArrayList<ASTNode> getChildren() {
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		VariableAssignment that = (VariableAssignment) o;
-		return Objects.equals(name, that.name) &&
-				Objects.equals(expression, that.expression);
-	}
+        ArrayList<ASTNode> children = new ArrayList<>();
+        if (name != null)
+            children.add(name);
+        if (expression != null)
+            children.add(expression);
+        return children;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, expression);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        VariableAssignment that = (VariableAssignment) o;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(expression, that.expression);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, expression);
+    }
 }

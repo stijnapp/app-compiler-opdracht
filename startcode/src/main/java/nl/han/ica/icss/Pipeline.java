@@ -34,22 +34,26 @@ public class Pipeline implements ANTLRErrorListener {
     public AST getAST() {
         return ast;
     }
+
     public List<String> getErrors() {
         return errors;
     }
+
     public boolean isParsed() {
         return parsed;
     }
+
     public boolean isChecked() {
         return checked;
     }
+
     public boolean isTransformed() {
         return transformed;
     }
 
     public void parseString(String input) {
 
-        //Lex (with Antlr's generated lexer)
+        // Lex (with Antlr's generated lexer)
         CharStream inputStream = CharStreams.fromString(input);
         ICSSLexer lexer = new ICSSLexer(inputStream);
         lexer.removeErrorListeners();
@@ -58,14 +62,14 @@ public class Pipeline implements ANTLRErrorListener {
         try {
             CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-            //Parse (with Antlr's generated parser)
+            // Parse (with Antlr's generated parser)
             ICSSParser parser = new ICSSParser(tokens);
             parser.removeErrorListeners();
             parser.addErrorListener(this);
 
             ParseTree parseTree = parser.stylesheet();
 
-            //Extract AST from the Antlr parse tree
+            // Extract AST from the Antlr parse tree
             ASTListener listener = new ASTListener();
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.walk(listener, parseTree);
@@ -83,30 +87,31 @@ public class Pipeline implements ANTLRErrorListener {
         parsed = errors.isEmpty();
         checked = transformed = false;
     }
+
     public boolean check() {
-            if(ast == null)
-                return false;
+        if (ast == null)
+            return false;
 
-           (new Checker()).check(this.ast);
+        (new Checker()).check(this.ast);
 
-            ArrayList<SemanticError> errors = this.ast.getErrors();
-            if (!errors.isEmpty()) {
-                for (SemanticError e : errors) {
-                    this.errors.add(e.toString());
-                }
+        ArrayList<SemanticError> errors = this.ast.getErrors();
+        if (!errors.isEmpty()) {
+            for (SemanticError e : errors) {
+                this.errors.add(e.toString());
             }
+        }
 
-            checked = errors.isEmpty();
-            transformed = false;
-            return errors.isEmpty();
+        checked = errors.isEmpty();
+        transformed = false;
+        return errors.isEmpty();
     }
 
-    public void clearErrors(){
+    public void clearErrors() {
         errors.clear();
     }
 
     public void transform() {
-        if(ast == null)
+        if (ast == null)
             return;
 
         (new Evaluator()).apply(ast);
@@ -114,12 +119,13 @@ public class Pipeline implements ANTLRErrorListener {
 
         transformed = errors.isEmpty();
     }
+
     public String generate() {
         Generator generator = new Generator();
         return generator.generate(ast);
     }
 
-    //Catch ANTLR errors
+    // Catch ANTLR errors
     @Override
     public void reportAmbiguity(Parser arg0, DFA arg1, int arg2, int arg3,
                                 boolean arg4, BitSet arg5, ATNConfigSet arg6) {

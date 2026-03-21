@@ -7,7 +7,6 @@ import nl.han.ica.icss.ast.types.ExpressionType;
 import java.util.HashMap;
 
 
-
 public class Checker {
 
     private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
@@ -17,5 +16,5 @@ public class Checker {
 
     }
 
-    
+
 }

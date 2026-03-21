@@ -22,38 +22,38 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
-//We use this google library, because it makes life so much easier when
-//reading the examples icss files as packaged resource
+// We use this google library, because it makes life so much easier when
+// reading the examples icss files as packaged resource
 
 @SuppressWarnings("restriction")
 public class MainGui extends Application {
 
     private final static String title = "ICSS Tool September 2020, version 1";
-    //Example files (for menu)
-    private final static List<String> examples = Arrays.asList("level0.icss","level1.icss","level2.icss","level3.icss");
+    // Example files (for menu)
+    private final static List<String> examples = Arrays.asList("level0.icss", "level1.icss", "level2.icss", "level3.icss");
 
-    //UI Components
+    // UI Components
     private InputPane inputPane;
     private ASTPane astPane;
     private OutputPane outputPane;
     private FeedbackPane feedbackPane;
 
-    //Toolbar buttons
+    // Toolbar buttons
     private Button parseButton;
     private Button checkButton;
     private Button transformButton;
     private Button generateButton;
 
-    //Model
+    // Model
     private Pipeline pipeline;
 
 
     @Override
     public void start(Stage stage) {
-        //Setup pipeline
+        // Setup pipeline
         pipeline = new Pipeline();
 
-        //Setup UI
+        // Setup UI
         stage.setTitle(title);
 
         inputPane = new InputPane();
@@ -61,10 +61,10 @@ public class MainGui extends Application {
         outputPane = new OutputPane();
         feedbackPane = new FeedbackPane();
 
-        //Reference for the callbacks
+        // Reference for the callbacks
         final MainGui me = this;
 
-        //Create buttons
+        // Create buttons
         parseButton = new Button("Parse");
         parseButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -95,7 +95,7 @@ public class MainGui extends Application {
             }
         });
 
-        //Create menus
+        // Create menus
         MenuBar menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("File");
@@ -114,8 +114,8 @@ public class MainGui extends Application {
         });
         Menu exampleFilesMenu = new Menu("Load example ICSS");
 
-        //We load them as resources straight from the application's jar
-        for(String level: examples) {
+        // We load them as resources straight from the application's jar
+        for (String level : examples) {
 
             MenuItem levelItem = new MenuItem(level);
             levelItem.setOnAction(new EventHandler<ActionEvent>() {
@@ -136,7 +136,7 @@ public class MainGui extends Application {
         saveOutput.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
-                //Create file dialog
+                // Create file dialog
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Save generated CSS...");
                 fileChooser.setInitialFileName("output.css");
@@ -159,12 +159,12 @@ public class MainGui extends Application {
                 saveOutput, new SeparatorMenuItem(), quit);
         menuBar.getMenus().addAll(fileMenu);
 
-        //Layout components
+        // Layout components
         BorderPane main = new BorderPane();
         SplitPane center = new SplitPane();
         center.getItems().addAll(inputPane, astPane, outputPane);
 
-        //Toolbar
+        // Toolbar
         HBox toolbar = new HBox();
         toolbar.setPadding(new Insets(5, 5, 5, 5));
         toolbar.getChildren().addAll(new Label("Pipeline: "), parseButton, checkButton, transformButton, generateButton);
@@ -195,7 +195,7 @@ public class MainGui extends Application {
         clear();
         feedbackPane.addLine("Parsing...");
         pipeline.parseString(inputPane.getText());
-        for(String e : pipeline.getErrors()) {
+        for (String e : pipeline.getErrors()) {
             feedbackPane.addLine(e);
         }
         if (pipeline.isParsed()) {
@@ -220,14 +220,14 @@ public class MainGui extends Application {
     }
 
     private void transform() {
-       clear();
-       feedbackPane.addLine("Applying transformations...");
-       pipeline.transform();
-       if (pipeline.isTransformed()) {
-           feedbackPane.addLine("Transformation succeeded");
-       }
-       astPane.update(pipeline.getAST());
-       updateToolbar();
+        clear();
+        feedbackPane.addLine("Applying transformations...");
+        pipeline.transform();
+        if (pipeline.isTransformed()) {
+            feedbackPane.addLine("Transformation succeeded");
+        }
+        astPane.update(pipeline.getAST());
+        updateToolbar();
     }
 
     private void generate() {
@@ -239,7 +239,7 @@ public class MainGui extends Application {
     }
 
     private void updateToolbar() {
-        //Quick and ugly way...
+        // Quick and ugly way...
         checkButton.setDisable(true);
         transformButton.setDisable(true);
         generateButton.setDisable(true);

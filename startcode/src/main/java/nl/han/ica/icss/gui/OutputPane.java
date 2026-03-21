@@ -12,34 +12,37 @@ import javafx.scene.layout.BorderPane;
 @SuppressWarnings("restriction")
 public class OutputPane extends BorderPane {
 
-	private Label title;
-	private TextArea content;
+    private Label title;
+    private TextArea content;
 
-	public OutputPane () {
-		super();
+    public OutputPane() {
+        super();
 
-		title = new Label("Output (CSS):");
-		title.setPadding(new Insets(5, 5, 5, 5));
+        title = new Label("Output (CSS):");
+        title.setPadding(new Insets(5, 5, 5, 5));
 
-		content = new TextArea();
-		content.setEditable(false);
+        content = new TextArea();
+        content.setEditable(false);
 
-		setTop(title);
-		setCenter(content);
-	}
-	public void setText(String text) {
-		content.setText(text);
-	}
-	public String getText() {
-		return content.getText();
-	}
-	public void writeToFile(File file) {
-		try {
-			PrintStream out = new PrintStream(new FileOutputStream(file));
-			out.print(this.getText());
-			out.close();
-		} catch(Exception exception) {
-			System.err.println(exception);
-		}
-	}
+        setTop(title);
+        setCenter(content);
+    }
+
+    public void setText(String text) {
+        content.setText(text);
+    }
+
+    public String getText() {
+        return content.getText();
+    }
+
+    public void writeToFile(File file) {
+        try {
+            PrintStream out = new PrintStream(new FileOutputStream(file));
+            out.print(this.getText());
+            out.close();
+        } catch (Exception exception) {
+            System.err.println(exception);
+        }
+    }
 }

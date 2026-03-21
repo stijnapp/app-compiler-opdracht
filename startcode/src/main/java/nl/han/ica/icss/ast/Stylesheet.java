@@ -11,46 +11,50 @@ import java.util.Objects;
  */
 public class Stylesheet extends ASTNode {
 
+    public ArrayList<ASTNode> body;
 
-	public ArrayList<ASTNode> body;
-	
-	public Stylesheet() {
-		this.body = new ArrayList<>();
-	}
-	public Stylesheet(ArrayList<ASTNode> body) {
-		this.body = body;
-	}
-	@Override
-	public String getNodeLabel() {
-		return "Stylesheet";
-	}
-	@Override
-	public ArrayList<ASTNode> getChildren() {
-		return this.body;
-	}
-	@Override
-	public ASTNode addChild(ASTNode child) {
-	    	body.add(child);
-	    	return this;
-	}
-	@Override
-	public ASTNode removeChild(ASTNode child) {
-		body.remove(child);
-		return this;
-	}
+    public Stylesheet() {
+        this.body = new ArrayList<>();
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		Stylesheet that = (Stylesheet) o;
-		return Objects.equals(body, that.body);
-	}
+    public Stylesheet(ArrayList<ASTNode> body) {
+        this.body = body;
+    }
 
-	@Override
-	public int hashCode() {
+    @Override
+    public String getNodeLabel() {
+        return "Stylesheet";
+    }
 
-		return Objects.hash(body);
-	}
+    @Override
+    public ArrayList<ASTNode> getChildren() {
+        return this.body;
+    }
+
+    @Override
+    public ASTNode addChild(ASTNode child) {
+        body.add(child);
+        return this;
+    }
+
+    @Override
+    public ASTNode removeChild(ASTNode child) {
+        body.remove(child);
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Stylesheet that = (Stylesheet) o;
+        return Objects.equals(body, that.body);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(body);
+    }
 }
