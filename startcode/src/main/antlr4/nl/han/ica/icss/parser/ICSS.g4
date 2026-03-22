@@ -47,7 +47,7 @@ stylesheet  : (assignment | stylerule)* EOF;
 assignment  : variable ASSIGNMENT_OPERATOR expression SEMICOLON;
 
 // style rule
-stylerule   : selector OPEN_BRACE body CLOSE_BRACE;
+stylerule   : selector (',' selector)* OPEN_BRACE body CLOSE_BRACE;
 selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
