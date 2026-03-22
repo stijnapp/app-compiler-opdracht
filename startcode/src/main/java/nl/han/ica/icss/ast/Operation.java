@@ -26,6 +26,4 @@ public abstract class Operation extends Expression {
         }
         return this;
     }
-
-    // TODO: add some abstract method to calculate the value of the operation, for easy use during evaluation
 }

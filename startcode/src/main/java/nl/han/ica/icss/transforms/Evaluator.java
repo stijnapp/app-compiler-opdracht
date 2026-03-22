@@ -29,45 +29,57 @@ public class Evaluator implements Transform {
         if (node instanceof Stylesheet || node instanceof StyleRule || node instanceof IfClause || node instanceof ElseClause) {
             variableValues.addFirst(new HashMap<>());
 
-            // create a new list to prevent ConcurrentModificationException
-            ArrayList<ASTNode> children = new ArrayList<>(node.getChildren());
-            for (ASTNode child : children) {
+            ArrayList<ASTNode> currentBody;
+            if (node instanceof Stylesheet) {
+                currentBody = ((Stylesheet) node).body;
+            } else if (node instanceof StyleRule) {
+                currentBody = ((StyleRule) node).body;
+            } else if (node instanceof IfClause) {
+                currentBody = ((IfClause) node).body;
+            } else {
+                currentBody = ((ElseClause) node).body;
+            }
+
+            ArrayList<ASTNode> newBody = new ArrayList<>();
+
+            for (ASTNode child : currentBody) {
                 if (child instanceof VariableAssignment) {
                     // save the variable's name and value in the symbol table
                     VariableAssignment variableAssignment = (VariableAssignment) child;
                     String name = variableAssignment.name.name;
                     Literal value = calculateExpressionValue(variableAssignment.expression);
                     variableValues.getFirst().put(name, value);
-
-                    // remove the variable assignment node from the AST itself, since it's now out-of-scope and not needed anymore
-                    node.removeChild(variableAssignment);
                 }
 
                 // TR02: replace all if-else's with actual body (or nothing) based on condition
                 else if (child instanceof IfClause) {
                     IfClause ifClause = (IfClause) child;
+
+                    applyNode(ifClause);
+
                     BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
 
                     if (conditionLiteral.value) {
-                        // replace the if-clause with all of its body nodes
-                        for (ASTNode bodyNode : ifClause.body) {
-                            // TODO: this will add the body nodes at the end of the current node's children instead of the place of the if-clause
-                            //   something like, node.getChildren(), find index of if-clause, add body nodes before that index
-                            node.addChild(bodyNode);
-                        }
+                        newBody.addAll(ifClause.body);
                     } else if (ifClause.elseClause != null) {
-                        // replace the if-clause with the else clause's body nodes
-                        for (ASTNode bodyNode : ifClause.elseClause.body) {
-                            // TODO: same as above, this adds the nodes at the end instead of in the right place
-                            node.addChild(bodyNode);
-                        }
+                        applyNode(ifClause.elseClause);
+                        newBody.addAll(ifClause.elseClause.body);
                     }
-                    // condition is false and no else clause, so just delete the whole thing
-                    node.removeChild(ifClause);
-
-                    // need to check newly added body, as bodies can be nested
-                    applyNode(node);
+                } else {
+                    applyNode(child);
+                    newBody.add(child);
                 }
+            }
+
+            // replace the current body with the new body with solved if-else's
+            if (node instanceof Stylesheet) {
+                ((Stylesheet) node).body = newBody;
+            } else if (node instanceof StyleRule) {
+                ((StyleRule) node).body = newBody;
+            } else if (node instanceof IfClause) {
+                ((IfClause) node).body = newBody;
+            } else {
+                ((ElseClause) node).body = newBody;
             }
         }
 
@@ -127,7 +139,6 @@ public class Evaluator implements Transform {
         throw new RuntimeException("Unsupported expression type: " + expression.getClass().getSimpleName());
     }
 
-    // TODO: add to Literal classes? would be cleaner, dont know if allowed
     private int calculateResultValue(Operation operation, int leftValue, int rightValue) {
         if (operation instanceof AddOperation) {
             return leftValue + rightValue;
@@ -140,7 +151,6 @@ public class Evaluator implements Transform {
         }
     }
 
-    // TODO: add to Literal classes? would be cleaner, dont know if allowed
     private int getOperandValue(Literal operand) {
         if (operand instanceof PercentageLiteral) {
             return ((PercentageLiteral) operand).value;
