@@ -11,8 +11,8 @@ BOX_BRACKET_CLOSE: ']';
 // Literals
 TRUE: 'TRUE';
 FALSE: 'FALSE';
-PIXELSIZE: [0-9]+ 'px';
-PERCENTAGE: [0-9]+ '%';
+PIXELSIZE: ([1-9][0-9]* | '0') 'px';
+PERCENTAGE: ([1-9][0-9]* | '0') '%';
 SCALAR: [1-9][0-9]* | '0';
 // Color value takes precedence over id idents
 COLOR: '#' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F];
