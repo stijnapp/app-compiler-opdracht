@@ -30,6 +30,19 @@ public class Checker {
         if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
             // new scope, so push new hashmap to list
             variableTypes.addFirst(new HashMap<>());
+
+            // CH05: check if if-clause is boolean
+            if (node instanceof IfClause) {
+                IfClause ifClause = (IfClause) node;
+                ExpressionType conditionType = getExpressionType(ifClause.conditionalExpression);
+
+                // skip if existing error
+                if (conditionType == null) return;
+
+                if (conditionType != ExpressionType.BOOL) {
+                    ifClause.setError("CH05: If-condition must be of type BOOL. Type is: " + conditionType);
+                }
+            }
         }
 
         // variable assignment
@@ -53,7 +66,7 @@ public class Checker {
             }
             if (!found) {
                 // if not found, set error on the variable reference node
-                variableReference.setError("CH01/CH06: Variable " + name + " is undefined");
+                variableReference.setError("CH01/CH06: Variable '" + name + "' is undefined");
             }
         }
 
@@ -66,7 +79,7 @@ public class Checker {
             if (typeofLhs == null || typeofRhs == null) return;
 
             if (typeofLhs != typeofRhs && typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
-                node.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs);
+                node.setError("CH02: Incompatible add/subtract types: " + typeofLhs + " and " + typeofRhs);
             }
         }
         // CH02: check operands of MUL for at least one scaler
@@ -77,15 +90,36 @@ public class Checker {
             if (typeofLhs == null || typeofRhs == null) return;
 
             if (typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
-                node.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs + ". At least one operand of a multiplication must be a scalar.");
+                node.setError("CH02: Incompatible multiplication types: " + typeofLhs + " and " + typeofRhs + ". At least one operand of a multiplication must be a scalar.");
             }
         }
 
-        // TODO: CH04: check if a property's value is of the correct type, eg. width should not be a color
-        //  - color/background-color = color/variable with color value
-        //  - width/height = pixel/percentage/variable with pixel/percentage value
-        // TODO: CH05: check if ifclause is boolean
+        // CH04: check if a property's value is of the correct type
+        else if (node instanceof Declaration) {
+            Declaration declaration = (Declaration) node;
+            String propertyName = declaration.property.name;
+            ExpressionType valueType = getExpressionType(declaration.expression);
 
+            // if valueType is null, skip because there is another error
+            if (valueType == null) return;
+
+            // if valueType is SCALAR, it's never correct because it needs to be a specific unit
+            if (valueType == ExpressionType.SCALAR) {
+                declaration.setError("CH04: Property '" + propertyName + "' cannot be of type SCALAR");
+                return;
+            }
+
+            // color/background-color = COLOR (or variable with that type)
+            if ((propertyName.equals("color") || propertyName.equals("background-color"))
+                    && valueType != ExpressionType.COLOR) {
+                declaration.setError("CH04: Property '" + propertyName + "' must be of type COLOR. Type is: " + valueType);
+            }
+            // width/height = PIXEL/PERCENTAGE (or variable with one of those types)
+            else if ((propertyName.equals("width") || propertyName.equals("height"))
+                    && valueType != ExpressionType.PIXEL && valueType != ExpressionType.PERCENTAGE) {
+                declaration.setError("CH04: Property '" + propertyName + "' must be of type PIXEL or PERCENTAGE. Type is: " + valueType);
+            }
+        }
 
         // check all children of this node for errors
         for (ASTNode child : node.getChildren()) {
@@ -122,7 +156,7 @@ public class Checker {
                 }
             }
             // if not found, set error on the expression and return null
-            expression.setError("CH01/CH06: Variable " + ((VariableReference) expression).name + " is undefined");
+            expression.setError("CH01/CH06: Variable '" + ((VariableReference) expression).name + "' is undefined");
             return null;
         } else if (expression instanceof Operation) {
             ExpressionType typeofLhs = getExpressionType(((Operation) expression).lhs);
@@ -142,7 +176,7 @@ public class Checker {
 
             // CH02: if none are scalar (and they cant be the same, because of previous if), the types are incompatible
             if (typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
-                expression.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs);
+                expression.setError("CH02: Incompatible operator types: " + typeofLhs + " and " + typeofRhs);
                 return null;
             }
 
