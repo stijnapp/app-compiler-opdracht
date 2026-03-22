@@ -14,7 +14,7 @@ import java.util.HashMap;
 
 public class Checker {
 
-    // symbol table: a list (which is mostly used as a stack) of hashmaps
+    // symbol table: a list (which is mostly used as an iterable stack) of hashmaps
     // each hashmap represents a scope with its variable's names and types
     private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
 
@@ -53,13 +53,34 @@ public class Checker {
             }
             if (!found) {
                 // if not found, set error on the variable reference node
-                variableReference.setError("Variable " + name + " is undefined");
+                variableReference.setError("CH01/CH06: Variable " + name + " is undefined");
             }
         }
 
-        // TODO: CH02: check operands of PLUS/MIN for either the exact same types, or scalar+other
-        // TODO: CH02: check operands of MUL for at least one scaler
-        // TODO: CH03: check operands to never be of type color
+        // CH02: check operands of PLUS/MIN for either the exact same types, or scalar+other
+        else if (node instanceof AddOperation || node instanceof SubtractOperation) {
+            ExpressionType typeofLhs = getExpressionType(((Operation) node).lhs);
+            ExpressionType typeofRhs = getExpressionType(((Operation) node).rhs);
+
+            // skip if one of the sides already has an error
+            if (typeofLhs == null || typeofRhs == null) return;
+
+            if (typeofLhs != typeofRhs && typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
+                node.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs);
+            }
+        }
+        // CH02: check operands of MUL for at least one scaler
+        else if (node instanceof MultiplyOperation) {
+            ExpressionType typeofLhs = getExpressionType(((Operation) node).lhs);
+            ExpressionType typeofRhs = getExpressionType(((Operation) node).rhs);
+
+            if (typeofLhs == null || typeofRhs == null) return;
+
+            if (typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
+                node.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs + ". At least one operand of a multiplication must be a scalar.");
+            }
+        }
+
         // TODO: CH04: check if a property's value is of the correct type, eg. width should not be a color
         //  - color/background-color = color/variable with color value
         //  - width/height = pixel/percentage/variable with pixel/percentage value
@@ -101,13 +122,36 @@ public class Checker {
                 }
             }
             // if not found, set error on the expression and return null
-            expression.setError("Variable " + ((VariableReference) expression).name + " is undefined");
+            expression.setError("CH01/CH06: Variable " + ((VariableReference) expression).name + " is undefined");
             return null;
-        } else if (expression instanceof AddOperation || expression instanceof SubtractOperation || expression instanceof MultiplyOperation) {
-            // TODO: scalar for now, but could be other, eg. 2*10px should be pixel...
-            // could be implemented by expanding Operation class with a function to calculate the result (and type)
-            return ExpressionType.SCALAR;
+        } else if (expression instanceof Operation) {
+            ExpressionType typeofLhs = getExpressionType(((Operation) expression).lhs);
+            ExpressionType typeofRhs = getExpressionType(((Operation) expression).rhs);
+
+            // first, if one of the sides already has an error, just skip it for cleaner errors
+            if (typeofLhs == null || typeofRhs == null) return null;
+
+            // CH03: colors are not allowed in operations, so immediately set error
+            if (typeofLhs == ExpressionType.COLOR || typeofRhs == ExpressionType.COLOR) {
+                expression.setError("CH03: Colors are not allowed in operations");
+                return null;
+            }
+
+            // if sides are the same type, return that type
+            if (typeofLhs == typeofRhs) return typeofLhs;
+
+            // CH02: if none are scalar (and they cant be the same, because of previous if), the types are incompatible
+            if (typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR) {
+                expression.setError("CH02: Incompatible types: " + typeofLhs + " and " + typeofRhs);
+                return null;
+            }
+
+            // one side has to be scalar, so return the other type
+            return typeofLhs == ExpressionType.SCALAR ? typeofRhs : typeofLhs;
         }
-        throw new RuntimeException("Unknown expression type: " + expression.getClass().getSimpleName());
+
+        // this should never be reached. Maybe when a new expression is added and not handled yet?
+        expression.setError("Unknown expression type: " + expression.getClass().getSimpleName());
+        return null;
     }
 }
