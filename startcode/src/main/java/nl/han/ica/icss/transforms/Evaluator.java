@@ -9,12 +9,12 @@ import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Evaluator implements Transform {
 
-    // TODO: allowed to remove list?
     private IHANLinkedList<HashMap<String, Literal>> variableValues;
 
     public Evaluator() {
@@ -30,57 +30,48 @@ public class Evaluator implements Transform {
     }
 
     private void applyNode(ASTNode node) {
-        // same logic as in Checker, but store actual values instead of types
-        if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
+        if (node instanceof Stylesheet || node instanceof Stylerule || node instanceof IfClause || node instanceof ElseClause) {
             variableValues.addFirst(new HashMap<>());
-        }
 
-        // variable assignment
-        if (node instanceof VariableAssignment) {
-            VariableAssignment variableAssignment = (VariableAssignment) node;
-            String name = variableAssignment.name.name;
-            Literal value = calculateExpressionValue(variableAssignment.expression);
-            variableValues.getFirst().put(name, value);
-        }
+            // create a new list to prevent ConcurrentModificationException
+            ArrayList<ASTNode> children = new ArrayList<>(node.getChildren());
+            for (ASTNode child : children) {
+                if (child instanceof VariableAssignment) {
+                    // save the variable's name and value in the symbol table
+                    VariableAssignment variableAssignment = (VariableAssignment) child;
+                    String name = variableAssignment.name.name;
+                    Literal value = calculateExpressionValue(variableAssignment.expression);
+                    variableValues.getFirst().put(name, value);
 
-        // condense all operationExpressions to single literals
-        else if (node instanceof Operation) {
-            Operation operation = (Operation) node;
-            Literal value = calculateExpressionValue(operation);
-            replaceNode(operation, value);
-        }
-
-        // TR01: replace all variable references with their actual value
-        else if (node instanceof VariableReference) {
-            VariableReference variableReference = (VariableReference) node;
-            String name = variableReference.name;
-            // search for the variable in the symbol table
-            for (HashMap<String, Literal> scope : variableValues) {
-                if (scope.containsKey(name)) {
-                    Literal value = scope.get(name);
-                    // replace this node with a literal node with the value of the variable
-                    replaceNode(variableReference, value);
-                    break;
+                    // remove the variable assignment node from the AST itself, since it's not needed anymore
+                    node.removeChild(variableAssignment);
                 }
             }
         }
 
-        // TR02: replace all if-else's with actual body (or nothing) based on condition
-        else if (node instanceof IfClause) {
-            IfClause ifClause = (IfClause) node;
-            // condition should already be reduced to a boolean literal, so just get the value
-            boolean conditionValue = ((BoolLiteral) ifClause.conditionalExpression).value;
-
-            if (conditionValue) {
-                // TODO: replace the if-clause with all of its body nodes
-                // body can be multiple nodes... ?
-            } else if (ifClause.elseClause != null) {
-                // TODO: replace the if-clause with the else clause's body nodes
-            } else {
-                // TODO: condition is false and no else clause, so just remove the whole if-clause
-                replaceNode(ifClause, null);
-            }
+        // TR01: replace all variable references with their actual value
+        // (also handles all operations and literals)
+        if (node instanceof Declaration) {
+            Declaration declaration = (Declaration) node;
+            declaration.expression = calculateExpressionValue(declaration.expression);
         }
+
+        // TODO: TR02: replace all if-else's with actual body (or nothing) based on condition
+        // else if (node instanceof IfClause) {
+        //     IfClause ifClause = (IfClause) node;
+        //     // condition should already be reduced to a boolean literal, so just get the value
+        //     boolean conditionValue = ((BoolLiteral) ifClause.conditionalExpression).value;
+        //
+        //     if (conditionValue) {
+        //         // TODO: replace the if-clause with all of its body nodes
+        //         // body can be multiple nodes... ?
+        //     } else if (ifClause.elseClause != null) {
+        //         // TODO: replace the if-clause with the else clause's body nodes
+        //     } else {
+        //         // TODO: condition is false and no else clause, so just remove the whole if-clause
+        //         replaceNode(ifClause, null);
+        //     }
+        // }
 
         // recursively apply to children
         for (ASTNode child : node.getChildren()) {
@@ -155,11 +146,5 @@ public class Evaluator implements Transform {
         } else {
             throw new RuntimeException("Unsupported literal type: " + operand.getClass().getSimpleName());
         }
-    }
-
-    private void replaceNode(ASTNode oldNode, ASTNode newNode) {
-        // TODO: something with .removeChild(), and when newNode != null, addChild()?
-        // removeChild() needs to be implemented in every node where a child can be simplified (thus replaced)
-        // and how to get the parent node?
     }
 }
