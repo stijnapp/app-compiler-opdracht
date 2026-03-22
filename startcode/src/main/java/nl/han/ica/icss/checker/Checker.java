@@ -30,23 +30,10 @@ public class Checker {
         if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
             // new scope, so push new hashmap to list
             variableTypes.addFirst(new HashMap<>());
-
-            // CH05: check if if-clause is boolean
-            if (node instanceof IfClause) {
-                IfClause ifClause = (IfClause) node;
-                ExpressionType conditionType = getExpressionType(ifClause.conditionalExpression);
-
-                // skip if existing error
-                if (conditionType == null) return;
-
-                if (conditionType != ExpressionType.BOOL) {
-                    ifClause.setError("CH05: If-condition must be of type BOOL. Type is: " + conditionType);
-                }
-            }
         }
 
         // variable assignment
-        else if (node instanceof VariableAssignment) {
+        if (node instanceof VariableAssignment) {
             VariableAssignment variableAssignment = (VariableAssignment) node;
             String name = variableAssignment.name.name;
             ExpressionType varType = getExpressionType(variableAssignment.expression);
@@ -118,6 +105,19 @@ public class Checker {
             else if ((propertyName.equals("width") || propertyName.equals("height"))
                     && valueType != ExpressionType.PIXEL && valueType != ExpressionType.PERCENTAGE) {
                 declaration.setError("CH04: Property '" + propertyName + "' must be of type PIXEL or PERCENTAGE. Type is: " + valueType);
+            }
+        }
+
+        // CH05: check if if-clause is boolean
+        else if (node instanceof IfClause) {
+            IfClause ifClause = (IfClause) node;
+            ExpressionType conditionType = getExpressionType(ifClause.conditionalExpression);
+
+            // skip if existing error
+            if (conditionType == null) return;
+
+            if (conditionType != ExpressionType.BOOL) {
+                ifClause.setError("CH05: If-condition must be of type BOOL. Type is: " + conditionType);
             }
         }
 

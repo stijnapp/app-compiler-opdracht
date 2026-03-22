@@ -36,15 +36,51 @@ public class Evaluator implements Transform {
         }
 
         // variable assignment
-        else if (node instanceof VariableAssignment) {
+        if (node instanceof VariableAssignment) {
             VariableAssignment variableAssignment = (VariableAssignment) node;
             String name = variableAssignment.name.name;
             Literal value = calculateExpressionValue(variableAssignment.expression);
             variableValues.getFirst().put(name, value);
         }
 
-        // TODO: TR01: replace all variable references with their actual value
-        // TODO: TR02: replace all if-else's with actual body (or nothing) based on condition
+        // condense all operationExpressions to single literals
+        else if (node instanceof Operation) {
+            Operation operation = (Operation) node;
+            Literal value = calculateExpressionValue(operation);
+            replaceNode(operation, value);
+        }
+
+        // TR01: replace all variable references with their actual value
+        else if (node instanceof VariableReference) {
+            VariableReference variableReference = (VariableReference) node;
+            String name = variableReference.name;
+            // search for the variable in the symbol table
+            for (HashMap<String, Literal> scope : variableValues) {
+                if (scope.containsKey(name)) {
+                    Literal value = scope.get(name);
+                    // replace this node with a literal node with the value of the variable
+                    replaceNode(variableReference, value);
+                    break;
+                }
+            }
+        }
+
+        // TR02: replace all if-else's with actual body (or nothing) based on condition
+        else if (node instanceof IfClause) {
+            IfClause ifClause = (IfClause) node;
+            // condition should already be reduced to a boolean literal, so just get the value
+            boolean conditionValue = ((BoolLiteral) ifClause.conditionalExpression).value;
+
+            if (conditionValue) {
+                // TODO: replace the if-clause with all of its body nodes
+                // body can be multiple nodes... ?
+            } else if (ifClause.elseClause != null) {
+                // TODO: replace the if-clause with the else clause's body nodes
+            } else {
+                // TODO: condition is false and no else clause, so just remove the whole if-clause
+                replaceNode(ifClause, null);
+            }
+        }
 
         // recursively apply to children
         for (ASTNode child : node.getChildren()) {
@@ -75,44 +111,14 @@ public class Evaluator implements Transform {
             Literal leftLiteral = calculateExpressionValue(operation.lhs);
             Literal rightLiteral = calculateExpressionValue(operation.rhs);
 
-            // TODO: very crude way to get the value (without changing the Literal classes), but works for now...
-            // get the int value of the left and right literals
-            // replace with `getOperandValue` method
-            int leftValue;
-            if (leftLiteral instanceof PercentageLiteral) {
-                leftValue = ((PercentageLiteral) leftLiteral).value;
-            } else if (leftLiteral instanceof PixelLiteral) {
-                leftValue = ((PixelLiteral) leftLiteral).value;
-            } else if (leftLiteral instanceof ScalarLiteral) {
-                leftValue = ((ScalarLiteral) leftLiteral).value;
-            } else {
-                // should not be possible. It's to suppress "Variable 'leftValue' might not have been initialized"
-                throw new RuntimeException("Unsupported literal type: " + leftLiteral.getClass().getSimpleName());
-            }
-            int rightValue;
-            if (rightLiteral instanceof PercentageLiteral) {
-                rightValue = ((PercentageLiteral) rightLiteral).value;
-            } else if (rightLiteral instanceof PixelLiteral) {
-                rightValue = ((PixelLiteral) rightLiteral).value;
-            } else if (rightLiteral instanceof ScalarLiteral) {
-                rightValue = ((ScalarLiteral) rightLiteral).value;
-            } else {
-                throw new RuntimeException("Unsupported literal type: " + rightLiteral.getClass().getSimpleName());
-            }
+            // get operand values as ints
+            int leftValue = getOperandValue(leftLiteral);
+            int rightValue = getOperandValue(rightLiteral);
 
-            // calculate integer value
-            int resultValue;
-            if (operation instanceof AddOperation) {
-                resultValue = leftValue + rightValue;
-            } else if (operation instanceof SubtractOperation) {
-                resultValue = leftValue - rightValue;
-            } else if (operation instanceof MultiplyOperation) {
-                resultValue = leftValue * rightValue;
-            } else {
-                throw new RuntimeException("Unsupported operation type: " + operation.getClass().getSimpleName());
-            }
+            // calculate int result
+            int resultValue = calculateResultValue(operation, leftValue, rightValue);
 
-            // figure out the return type based on the types of left and right. scalar is lowest priority
+            // figure out the return type based on the types of left and right. scalar is the lowest priority
             if (leftLiteral instanceof PercentageLiteral || rightLiteral instanceof PercentageLiteral) {
                 return new PercentageLiteral(resultValue);
             } else if (leftLiteral instanceof PixelLiteral || rightLiteral instanceof PixelLiteral) {
@@ -123,5 +129,37 @@ public class Evaluator implements Transform {
         }
         // Shouldn't be reached, except if the code has changes in the future without updating the transformer
         throw new RuntimeException("Unsupported expression type: " + expression.getClass().getSimpleName());
+    }
+
+    // TODO: add to Literal classes? would be cleaner, dont know if allowed
+    private int calculateResultValue(Operation operation, int leftValue, int rightValue) {
+        if (operation instanceof AddOperation) {
+            return leftValue + rightValue;
+        } else if (operation instanceof SubtractOperation) {
+            return leftValue - rightValue;
+        } else if (operation instanceof MultiplyOperation) {
+            return leftValue * rightValue;
+        } else {
+            throw new RuntimeException("Unsupported operation type: " + operation.getClass().getSimpleName());
+        }
+    }
+
+    // TODO: add to Literal classes? would be cleaner, dont know if allowed
+    private int getOperandValue(Literal operand) {
+        if (operand instanceof PercentageLiteral) {
+            return ((PercentageLiteral) operand).value;
+        } else if (operand instanceof PixelLiteral) {
+            return ((PixelLiteral) operand).value;
+        } else if (operand instanceof ScalarLiteral) {
+            return ((ScalarLiteral) operand).value;
+        } else {
+            throw new RuntimeException("Unsupported literal type: " + operand.getClass().getSimpleName());
+        }
+    }
+
+    private void replaceNode(ASTNode oldNode, ASTNode newNode) {
+        // TODO: something with .removeChild(), and when newNode != null, addChild()?
+        // removeChild() needs to be implemented in every node where a child can be simplified (thus replaced)
+        // and how to get the parent node?
     }
 }
