@@ -3,7 +3,6 @@ package nl.han.ica.icss.checker;
 import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
-import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
@@ -26,8 +25,8 @@ public class Checker {
 
     // checkNode is called recursively, so it's possible for the node to be any type of node in the AST
     private void checkNode(ASTNode node) {
-        // nodes that create a new scope: Stylerule, Stylesheet, IfClause, ElseClause
-        if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
+        // nodes that create a new scope: StyleRule, Stylesheet, IfClause, ElseClause
+        if (node instanceof StyleRule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
             // new scope, so push new hashmap to list
             variableTypes.addFirst(new HashMap<>());
         }
@@ -127,7 +126,7 @@ public class Checker {
         }
 
         // nodes with ending scope
-        if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
+        if (node instanceof StyleRule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
             // end of scope, so "pop" the hashmap from the list
             variableTypes.removeFirst();
         }

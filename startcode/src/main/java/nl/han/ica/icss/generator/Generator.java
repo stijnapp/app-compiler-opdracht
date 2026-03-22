@@ -12,11 +12,11 @@ public class Generator {
     public String generate(AST ast) {
         StringBuilder sb = new StringBuilder();
         for (ASTNode node : ast.root.getChildren()) {
-            // ignore anything but Stylerule
-            if (!(node instanceof Stylerule)) continue;
+            // ignore anything but StyleRule
+            if (!(node instanceof StyleRule)) continue;
 
             // generate the selector
-            Stylerule stylerule = (Stylerule) node;
+            StyleRule stylerule = (StyleRule) node;
             for (Selector selector : stylerule.selectors) {
                 sb.append(selector.toString()).append(", ");
             }

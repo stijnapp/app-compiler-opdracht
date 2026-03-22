@@ -131,7 +131,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterStylerule(ICSSParser.StyleruleContext ctx) {
-        Stylerule stylerule = new Stylerule();
+        StyleRule stylerule = new StyleRule();
         currentContainer.peek().addChild(stylerule);
         currentContainer.push(stylerule);
     }

@@ -7,11 +7,9 @@ import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
-import nl.han.ica.icss.ast.types.ExpressionType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 public class Evaluator implements Transform {
 
@@ -28,7 +26,7 @@ public class Evaluator implements Transform {
     }
 
     private void applyNode(ASTNode node) {
-        if (node instanceof Stylesheet || node instanceof Stylerule || node instanceof IfClause || node instanceof ElseClause) {
+        if (node instanceof Stylesheet || node instanceof StyleRule || node instanceof IfClause || node instanceof ElseClause) {
             variableValues.addFirst(new HashMap<>());
 
             // create a new list to prevent ConcurrentModificationException
@@ -86,7 +84,7 @@ public class Evaluator implements Transform {
         }
 
         // end of scope
-        if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
+        if (node instanceof StyleRule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
             variableValues.removeFirst();
         }
     }

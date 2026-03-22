@@ -3,15 +3,15 @@ package nl.han.ica.icss.ast;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class Stylerule extends ASTNode {
+public class StyleRule extends ASTNode {
 
     public ArrayList<Selector> selectors = new ArrayList<>();
     public ArrayList<ASTNode> body = new ArrayList<>();
 
-    public Stylerule() {
+    public StyleRule() {
     }
 
-    public Stylerule(Selector selector, ArrayList<ASTNode> body) {
+    public StyleRule(Selector selector, ArrayList<ASTNode> body) {
 
         this.selectors = new ArrayList<>();
         this.selectors.add(selector);
@@ -20,7 +20,7 @@ public class Stylerule extends ASTNode {
 
     @Override
     public String getNodeLabel() {
-        return "Stylerule";
+        return "StyleRule";
     }
 
     @Override
@@ -53,7 +53,7 @@ public class Stylerule extends ASTNode {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        Stylerule stylerule = (Stylerule) o;
+        StyleRule stylerule = (StyleRule) o;
         return Objects.equals(selectors, stylerule.selectors) &&
                 Objects.equals(body, stylerule.body);
     }
