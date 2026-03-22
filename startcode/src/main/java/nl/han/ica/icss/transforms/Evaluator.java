@@ -27,6 +27,7 @@ public class Evaluator implements Transform {
 
     private void applyNode(ASTNode node) {
         if (node instanceof Stylesheet || node instanceof StyleRule || node instanceof IfClause || node instanceof ElseClause) {
+            // new scope, so push new hashmap to list
             variableValues.addFirst(new HashMap<>());
 
             ArrayList<ASTNode> currentBody;
@@ -42,6 +43,8 @@ public class Evaluator implements Transform {
 
             ArrayList<ASTNode> newBody = new ArrayList<>();
 
+            // for each child, check if it should end up in the new body
+            // also calculate variable assignments
             for (ASTNode child : currentBody) {
                 if (child instanceof VariableAssignment) {
                     // save the variable's name and value in the symbol table
@@ -60,12 +63,16 @@ public class Evaluator implements Transform {
                     BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
 
                     if (conditionLiteral.value) {
+                        // condition is true, add if body to new body
                         newBody.addAll(ifClause.body);
                     } else if (ifClause.elseClause != null) {
+                        // condition is false and there is an else, add else body to new body
                         applyNode(ifClause.elseClause);
                         newBody.addAll(ifClause.elseClause.body);
                     }
+                    // if condition is false and there is no else, just ignore the if-clause (which won't add it to the new body)
                 } else {
+                    // for any other child, just check and add it to the nwe body
                     applyNode(child);
                     newBody.add(child);
                 }
@@ -88,11 +95,6 @@ public class Evaluator implements Transform {
         if (node instanceof Declaration) {
             Declaration declaration = (Declaration) node;
             declaration.expression = calculateExpressionValue(declaration.expression);
-        }
-
-        // recursively apply to children
-        for (ASTNode child : node.getChildren()) {
-            applyNode(child);
         }
 
         // end of scope
