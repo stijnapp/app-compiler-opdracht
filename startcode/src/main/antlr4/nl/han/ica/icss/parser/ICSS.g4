@@ -47,7 +47,7 @@ stylesheet  : (assignment | stylerule)* EOF;
 assignment  : variable ASSIGNMENT_OPERATOR expression SEMICOLON;
 
 // style rule
-stylerule   : selector OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE;
+stylerule   : selector OPEN_BRACE body CLOSE_BRACE;
 selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
@@ -59,8 +59,11 @@ expression  : expression op=MUL expression #OperationExpression
             ;
 
 // if-else
-ifclause    : IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE elseclause?;
-elseclause  : ELSE OPEN_BRACE (declaration | ifclause)* CLOSE_BRACE;
+ifclause    : IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE OPEN_BRACE body CLOSE_BRACE elseclause?;
+elseclause  : ELSE OPEN_BRACE body CLOSE_BRACE;
+
+body       : (declaration | ifclause | assignment)*;
+
 
 // basics
 variable    : CAPITAL_IDENT;

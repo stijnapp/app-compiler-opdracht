@@ -41,8 +41,7 @@ public class HANLinkedList<T> implements IHANLinkedList<T> {
     }
 
     private Node getNode(int index) {
-        if (size == 0) throw new IndexOutOfBoundsException("List is empty");
-        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
+        if (index < 0 || index > size) throw new IndexOutOfBoundsException();
 
         Node current;
         if (index < size / 2) {
@@ -100,6 +99,25 @@ public class HANLinkedList<T> implements IHANLinkedList<T> {
     @Override
     public int getSize() {
         return this.size;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
+            private Node current = header.next;
+
+            @Override
+            public boolean hasNext() {
+                return current != tail;
+            }
+
+            @Override
+            public T next() {
+                T value = current.value;
+                current = current.next;
+                return value;
+            }
+        };
     }
 }
 

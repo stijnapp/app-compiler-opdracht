@@ -1,9 +1,7 @@
 package nl.han.ica.icss.checker;
 
 import nl.han.ica.datastructures.HANLinkedList;
-import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANLinkedList;
-import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
@@ -16,62 +14,100 @@ import java.util.HashMap;
 
 public class Checker {
 
-    // symbol table: a stack of hashmaps. each hashmap represents a scope with its variable's names and types
-    private IHANStack<HashMap<String, ExpressionType>> variableTypes;
+    // symbol table: a list (which is mostly used as a stack) of hashmaps
+    // each hashmap represents a scope with its variable's names and types
+    private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
 
     public void check(AST ast) {
         // reset symbol table when check is called (which is the root of the checker)
-        variableTypes = new HANStack<>();
+        variableTypes = new HANLinkedList<>();
         checkNode(ast.root);
     }
 
+    // checkNode is called recursively, so it's possible for the node to be any type of node in the AST
     private void checkNode(ASTNode node) {
-        // checkNode is called recursively, so it's possible for the node to be any type of node in the AST
-
         // nodes that create a new scope: Stylerule, Stylesheet, IfClause, ElseClause
         if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
-            // new scope, so push new hashmap to stack
-            variableTypes.push(new HashMap<>());
-            // then check all children of this node for their variable usage and add errors if needed
-            for (ASTNode child : node.getChildren()) {
-                checkNode(child);
-            }
-            // exit scope, so pop the hashmap from the stack
-            variableTypes.pop();
+            // new scope, so push new hashmap to list
+            variableTypes.addFirst(new HashMap<>());
         }
+
         // variable assignment
         else if (node instanceof VariableAssignment) {
             VariableAssignment variableAssignment = (VariableAssignment) node;
             String name = variableAssignment.name.name;
             ExpressionType varType = getExpressionType(variableAssignment.expression);
-            variableTypes.peek().put(name, varType);
+            variableTypes.getFirst().put(name, varType);
+        }
+        // CH01 + CH06: variables should be defined, and only used within their scope
+        else if (node instanceof VariableReference) {
+            VariableReference variableReference = (VariableReference) node;
+            String name = variableReference.name;
+            // search through the variable name in the symbol table, starting from current scope and going up
+            boolean found = false;
+            for (HashMap<String, ExpressionType> scope : variableTypes) {
+                if (scope.containsKey(name)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // if not found, set error on the variable reference node
+                variableReference.setError("Variable " + name + " is undefined");
+            }
+        }
+
+        // TODO: CH02: check operands of PLUS/MIN for either the exact same types, or scalar+other
+        // TODO: CH02: check operands of MUL for at least one scaler
+        // TODO: CH03: check operands to never be of type color
+        // TODO: CH04: check if a property's value is of the correct type, eg. width should not be a color
+        //  - color/background-color = color/variable with color value
+        //  - width/height = pixel/percentage/variable with pixel/percentage value
+        // TODO: CH05: check if ifclause is boolean
+
+
+        // check all children of this node for errors
+        for (ASTNode child : node.getChildren()) {
+            checkNode(child);
+        }
+
+        // nodes with ending scope
+        if (node instanceof Stylerule || node instanceof Stylesheet || node instanceof IfClause || node instanceof ElseClause) {
+            // end of scope, so "pop" the hashmap from the list
+            variableTypes.removeFirst();
         }
     }
 
     private ExpressionType getExpressionType(Expression expression) {
         if (expression instanceof Literal) {
-            if (expression instanceof BoolLiteral) {
-                return ExpressionType.BOOL;
-            } else if (expression instanceof ColorLiteral) {
-                return ExpressionType.COLOR;
-            } else if (expression instanceof PercentageLiteral) {
-                return ExpressionType.PERCENTAGE;
-            } else if (expression instanceof PixelLiteral) {
-                return ExpressionType.PIXEL;
-            } else if (expression instanceof ScalarLiteral) {
-                return ExpressionType.SCALAR;
+            // simple checks for literal types
+            switch (expression.getClass().getSimpleName()) {
+                case "BoolLiteral":
+                    return ExpressionType.BOOL;
+                case "ColorLiteral":
+                    return ExpressionType.COLOR;
+                case "PercentageLiteral":
+                    return ExpressionType.PERCENTAGE;
+                case "PixelLiteral":
+                    return ExpressionType.PIXEL;
+                case "ScalarLiteral":
+                    return ExpressionType.SCALAR;
             }
         } else if (expression instanceof VariableReference) {
-            // TODO: search for the variable in the symbol table. either this scope or above (maybe change stack back to linked list for easier searching?)
-            // If it doesnt exist, return an error somehow
-            // otherwise return the type of the variable
-            // TODO: tempo return for now:
-            return ExpressionType.SCALAR;
+            // search for variable in symbol table, starting from current scope and going up
+            for (HashMap<String, ExpressionType> scope : variableTypes) {
+                if (scope.containsKey(((VariableReference) expression).name)) {
+                    return scope.get(((VariableReference) expression).name);
+                }
+            }
+            // if not found, set error on the expression and return null
+            expression.setError("Variable " + ((VariableReference) expression).name + " is undefined");
+            return null;
         } else if (expression instanceof AddOperation || expression instanceof SubtractOperation || expression instanceof MultiplyOperation) {
             // TODO: scalar for now, but could be other, eg. 2*10px should be pixel...
+            // could be implemented by expanding Operation class with a function to calculate the result (and type)
             return ExpressionType.SCALAR;
         }
-        // TODO: null for now. should this throw an exception?
-        return null;
+        throw new RuntimeException("Unknown expression type: " + expression.getClass().getSimpleName());
     }
 }
