@@ -24,9 +24,7 @@ public class Evaluator implements Transform {
     @Override
     public void apply(AST ast) {
         variableValues = new HANLinkedList<>();
-
         applyNode(ast.root);
-
     }
 
     private void applyNode(ASTNode node) {
@@ -43,8 +41,34 @@ public class Evaluator implements Transform {
                     Literal value = calculateExpressionValue(variableAssignment.expression);
                     variableValues.getFirst().put(name, value);
 
-                    // remove the variable assignment node from the AST itself, since it's not needed anymore
+                    // remove the variable assignment node from the AST itself, since it's now out-of-scope and not needed anymore
                     node.removeChild(variableAssignment);
+                }
+
+                // TR02: replace all if-else's with actual body (or nothing) based on condition
+                else if (child instanceof IfClause) {
+                    IfClause ifClause = (IfClause) child;
+                    BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
+
+                    if (conditionLiteral.value) {
+                        // replace the if-clause with all of its body nodes
+                        for (ASTNode bodyNode : ifClause.body) {
+                            // TODO: this will add the body nodes at the end of the current node's children instead of the place of the if-clause
+                            //   something like, node.getChildren(), find index of if-clause, add body nodes before that index
+                            node.addChild(bodyNode);
+                        }
+                    } else if (ifClause.elseClause != null) {
+                        // replace the if-clause with the else clause's body nodes
+                        for (ASTNode bodyNode : ifClause.elseClause.body) {
+                            // TODO: same as above, this adds the nodes at the end instead of in the right place
+                            node.addChild(bodyNode);
+                        }
+                    }
+                    // condition is false and no else clause, so just delete the whole thing
+                    node.removeChild(ifClause);
+
+                    // need to check newly added body, as bodies can be nested
+                    applyNode(node);
                 }
             }
         }
@@ -55,23 +79,6 @@ public class Evaluator implements Transform {
             Declaration declaration = (Declaration) node;
             declaration.expression = calculateExpressionValue(declaration.expression);
         }
-
-        // TODO: TR02: replace all if-else's with actual body (or nothing) based on condition
-        // else if (node instanceof IfClause) {
-        //     IfClause ifClause = (IfClause) node;
-        //     // condition should already be reduced to a boolean literal, so just get the value
-        //     boolean conditionValue = ((BoolLiteral) ifClause.conditionalExpression).value;
-        //
-        //     if (conditionValue) {
-        //         // TODO: replace the if-clause with all of its body nodes
-        //         // body can be multiple nodes... ?
-        //     } else if (ifClause.elseClause != null) {
-        //         // TODO: replace the if-clause with the else clause's body nodes
-        //     } else {
-        //         // TODO: condition is false and no else clause, so just remove the whole if-clause
-        //         replaceNode(ifClause, null);
-        //     }
-        // }
 
         // recursively apply to children
         for (ASTNode child : node.getChildren()) {
