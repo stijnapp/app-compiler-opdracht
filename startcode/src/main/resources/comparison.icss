@@ -1,0 +1,34 @@
+BaseWidth := 100px;
+BonusSize := 50px;
+BgColor := #000000;
+FontColor := #ffffff;
+HeaderSize := 10px;
+LayoutIsWide := BaseWidth + BonusSize >= 150px;
+ShowFooter := (BgColor != FontColor);
+
+header {
+    width: BaseWidth;
+
+    if [HeaderSize < 20px] {
+        height: HeaderSize;
+
+        if [LayoutIsWide == TRUE] {
+            width: 200px;
+        }
+    }
+}
+
+footer {
+    if [ShowFooter] {
+        color: FontColor;
+        background-color: BgColor;
+    } else {
+        color: #ff0000;
+    }
+}
+
+sidebar {
+    if [(10px + BonusSize) * 2 > 100px] {
+        width: 300px;
+    }
+}

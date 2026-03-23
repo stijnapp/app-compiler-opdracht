@@ -3,6 +3,7 @@ package nl.han.ica.icss.parser;
 import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.comparisons.*;
 import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
@@ -105,6 +106,41 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitOperationExpression(ICSSParser.OperationExpressionContext ctx) {
+        currentContainer.pop();
+    }
+
+    @Override
+    public void enterComparisonExpression(ICSSParser.ComparisonExpressionContext ctx) {
+        Comparison comparison;
+        // same deal as with the operation expression, but now for the comparison operators
+        switch (ctx.comp.getType()) {
+            case ICSSParser.GREATER:
+                comparison = new GreaterComparison();
+                break;
+            case ICSSParser.LESSER:
+                comparison = new LesserComparison();
+                break;
+            case ICSSParser.GREATER_EQUAL:
+                comparison = new GreaterEqualComparison();
+                break;
+            case ICSSParser.LESSER_EQUAL:
+                comparison = new LesserEqualComparison();
+                break;
+            case ICSSParser.EQUAL:
+                comparison = new EqualComparison();
+                break;
+            case ICSSParser.NOT_EQUAL:
+                comparison = new NotEqualComparison();
+                break;
+            default:
+                throw new RuntimeException("Unknown comparison operator: " + ctx.comp.getText() + " at line " + ctx.comp.getLine() + ", position " + ctx.comp.getCharPositionInLine());
+        }
+        currentContainer.peek().addChild(comparison);
+        currentContainer.push(comparison);
+    }
+
+    @Override
+    public void exitComparisonExpression(ICSSParser.ComparisonExpressionContext ctx) {
         currentContainer.pop();
     }
 
