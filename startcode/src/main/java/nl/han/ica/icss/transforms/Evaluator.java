@@ -142,7 +142,7 @@ public class Evaluator implements Transform {
             Literal leftLiteral = calculateExpressionValue(comparison.lhs);
             Literal rightLiteral = calculateExpressionValue(comparison.rhs);
 
-            boolean resultValue = calculateComparisonResult(comparison, getOperandValue(leftLiteral), getOperandValue(rightLiteral));
+            boolean resultValue = calculateComparisonResult(comparison, leftLiteral, rightLiteral);
             return new BoolLiteral(resultValue);
         }
         // Shouldn't be reached, except if the code has changes in the future without updating the transformer
@@ -161,19 +161,19 @@ public class Evaluator implements Transform {
         }
     }
 
-    private boolean calculateComparisonResult(Comparison comparison, int leftValue, int rightValue) {
-        if (comparison instanceof GreaterComparison) {
-            return leftValue > rightValue;
-        } else if (comparison instanceof LesserComparison) {
-            return leftValue < rightValue;
-        } else if (comparison instanceof GreaterEqualComparison) {
-            return leftValue >= rightValue;
-        } else if (comparison instanceof LesserEqualComparison) {
-            return leftValue <= rightValue;
-        } else if (comparison instanceof EqualComparison) {
-            return leftValue == rightValue;
+    private boolean calculateComparisonResult(Comparison comparison, Literal leftValue, Literal rightValue) {
+        if (comparison instanceof EqualComparison) {
+            return leftValue.equals(rightValue);
         } else if (comparison instanceof NotEqualComparison) {
-            return leftValue != rightValue;
+            return !leftValue.equals(rightValue);
+        } else if (comparison instanceof GreaterComparison) {
+            return getOperandValue(leftValue) > getOperandValue(rightValue);
+        } else if (comparison instanceof LesserComparison) {
+            return getOperandValue(leftValue) < getOperandValue(rightValue);
+        } else if (comparison instanceof GreaterEqualComparison) {
+            return getOperandValue(leftValue) >= getOperandValue(rightValue);
+        } else if (comparison instanceof LesserEqualComparison) {
+            return getOperandValue(leftValue) <= getOperandValue(rightValue);
         } else {
             throw new RuntimeException("Unsupported comparison type: " + comparison.getClass().getSimpleName());
         }

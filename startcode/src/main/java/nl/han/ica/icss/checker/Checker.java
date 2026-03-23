@@ -199,25 +199,18 @@ public class Checker {
 
             if (typeofLhs == null || typeofRhs == null) return null;
 
-            // TODO: extra: check for valid comparisons. eg, only allowed:
-            //   comparing same types with == or !=
-            //   comparing scalar, pixel, or percentage with >, <, >=, <= (given the types are the same, or one is scalar)
+            boolean isSizeComparison = !(comparison instanceof EqualComparison || comparison instanceof NotEqualComparison);
+            boolean typesAreDifferent = typeofLhs != typeofRhs;
+            boolean neitherIsScalar = typeofLhs != ExpressionType.SCALAR && typeofRhs != ExpressionType.SCALAR;
 
-            if (typeofLhs == typeofRhs && (comparison instanceof EqualComparison || comparison instanceof NotEqualComparison)) {
-                return ExpressionType.BOOL;
+            // Throw an error if >, <, >=, <= AND types are different AND none of them is scalar
+            if (isSizeComparison && typesAreDifferent && neitherIsScalar) {
+                expression.setError("CH07: Incompatible comparison types: '" + typeofLhs + "' and '" + typeofRhs + "' with operator: " + comparison.getClass().getSimpleName());
+                return null;
             }
 
-            boolean LhsIsComparable = (typeofLhs == ExpressionType.SCALAR || typeofLhs == ExpressionType.PIXEL || typeofLhs == ExpressionType.PERCENTAGE);
-            boolean RhsIsComparable = (typeofRhs == ExpressionType.SCALAR || typeofRhs == ExpressionType.PIXEL || typeofRhs == ExpressionType.PERCENTAGE);
-            boolean eitherIsScalar = (typeofLhs == ExpressionType.SCALAR || typeofRhs == ExpressionType.SCALAR);
-            boolean sizeBasedComparison = !(comparison instanceof EqualComparison || comparison instanceof NotEqualComparison);
-
-            if (LhsIsComparable && RhsIsComparable && (typeofLhs == typeofRhs || eitherIsScalar) && sizeBasedComparison) {
-                return ExpressionType.BOOL;
-            }
-
-            expression.setError("Incompatible comparison types: '" + typeofLhs + "' and '" + typeofRhs + "' with operator: " + comparison.getClass().getSimpleName());
-            return null;
+            // return type is always bool, so if no errors, return bool
+            return ExpressionType.BOOL;
         }
 
         // this should never be reached. Maybe when a new expression is added and not handled yet?

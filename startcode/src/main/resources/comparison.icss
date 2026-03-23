@@ -1,3 +1,4 @@
+// file to test implementation of comparisons. tests evaluations and allowed comparisons
 BaseWidth := 100px;
 BonusSize := 50px;
 BgColor := #000000;
@@ -28,7 +29,41 @@ footer {
 }
 
 sidebar {
+    // nested + calculations + comparison + if
     if [(10px + BonusSize) * 2 > 100px] {
         width: 300px;
     }
 }
+
+// Comparison tests
+ColorsSame := #000000 == #000000;
+ColorsDifferent := #000000 != #ffffff;
+PxComparison := 10px > 5px;
+PercentageComparison := 50% < 75%;
+ScalarComparison := 50px >= 50px;
+PxScalarComparison := 10px <= 50px;
+// PercentageScalarComparison := 50% > 50px;
+PxWithUnitComparison := 10px == 9px;
+PercentageWithUnitComparison := 50% == 30%;
+PercentageWithPxComparison := 50% == 10px;
+NotPercentageWithPxComparison := 50% != 50px;
+NotPercentageWithPxComparison := 50% != 10px;
+
+/*
+Expected output:
+
+header {
+  width: 100px;
+  height: 10px;
+  width: 200px;
+}
+
+footer {
+  color: #ffffff;
+  background-color: #000000;
+}
+
+sidebar {
+  width: 300px;
+}
+*/
