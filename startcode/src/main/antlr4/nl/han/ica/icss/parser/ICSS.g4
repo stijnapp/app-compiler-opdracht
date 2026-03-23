@@ -7,6 +7,8 @@ IF: 'if';
 ELSE: 'else';
 BOX_BRACKET_OPEN: '[';
 BOX_BRACKET_CLOSE: ']';
+PAREN_OPEN: '(';
+PAREN_CLOSE: ')';
 
 // Literals
 TRUE: 'TRUE';
@@ -20,6 +22,7 @@ COLOR: '#' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-
 // Specific identifiers for id's and css classes
 ID_IDENT: '#' [a-z0-9\-]+;
 CLASS_IDENT: '.' [a-z0-9\-]+;
+SELECTOR_SEPARATOR: ',';
 
 // General identifiers
 LOWER_IDENT: [a-z] [a-z0-9\-]*;
@@ -37,7 +40,12 @@ PLUS: '+';
 MIN: '-';
 MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
-
+GREATER: '>';
+LESSER: '<';
+GREATER_EQUAL: '>=';
+LESSER_EQUAL: '<=';
+EQUAL: '==';
+NOT_EQUAL: '!=';
 
 
 //--- PARSER: ---
@@ -47,13 +55,15 @@ stylesheet  : (assignment | stylerule)* EOF;
 assignment  : variable ASSIGNMENT_OPERATOR expression SEMICOLON;
 
 // style rule
-stylerule   : selector (',' selector)* OPEN_BRACE body CLOSE_BRACE;
+stylerule   : selector (SELECTOR_SEPARATOR selector)* OPEN_BRACE body CLOSE_BRACE;
 selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
-// expressions - left-recursive, so MUL has higher precedence than PLUS and MIN
-expression  : expression op=MUL expression #OperationExpression
+// expressions - left-recursive, so in order of precedence
+expression  : PAREN_OPEN expression PAREN_CLOSE #ParenthesizedExpression
+            | expression op=MUL expression #OperationExpression
             | expression op=(PLUS | MIN) expression #OperationExpression
+            | expression comp=(GREATER | LESSER | GREATER_EQUAL | LESSER_EQUAL | EQUAL | NOT_EQUAL) expression #ComparisonExpression
             | literal #LiteralExpression
             | variable #VariableExpression
             ;
