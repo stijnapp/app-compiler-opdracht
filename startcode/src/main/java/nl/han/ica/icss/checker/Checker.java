@@ -10,7 +10,9 @@ import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class Checker {
@@ -86,6 +88,13 @@ public class Checker {
         else if (node instanceof Declaration) {
             Declaration declaration = (Declaration) node;
             String propertyName = declaration.property.name;
+
+            // propertyName must be one of color, background-color, width, height
+            if (!List.of("color", "background-color", "width", "height").contains(propertyName)) {
+                declaration.setError("Unknown property '" + propertyName + "'. Allowed properties are: color, background-color, width, height.");
+                return;
+            }
+
             ExpressionType valueType = getExpressionType(declaration.expression);
 
             // if valueType is null, skip because there is another error
