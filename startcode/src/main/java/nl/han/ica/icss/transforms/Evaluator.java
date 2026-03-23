@@ -3,6 +3,7 @@ package nl.han.ica.icss.transforms;
 import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.comparisons.*;
 import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
@@ -136,6 +137,13 @@ public class Evaluator implements Transform {
             } else {
                 return new ScalarLiteral(resultValue);
             }
+        } else if (expression instanceof Comparison) {
+            Comparison comparison = (Comparison) expression;
+            Literal leftLiteral = calculateExpressionValue(comparison.lhs);
+            Literal rightLiteral = calculateExpressionValue(comparison.rhs);
+
+            boolean resultValue = calculateComparisonResult(comparison, getOperandValue(leftLiteral), getOperandValue(rightLiteral));
+            return new BoolLiteral(resultValue);
         }
         // Shouldn't be reached, except if the code has changes in the future without updating the transformer
         throw new RuntimeException("Unsupported expression type: " + expression.getClass().getSimpleName());
@@ -150,6 +158,24 @@ public class Evaluator implements Transform {
             return leftValue * rightValue;
         } else {
             throw new RuntimeException("Unsupported operation type: " + operation.getClass().getSimpleName());
+        }
+    }
+
+    private boolean calculateComparisonResult(Comparison comparison, int leftValue, int rightValue) {
+        if (comparison instanceof GreaterComparison) {
+            return leftValue > rightValue;
+        } else if (comparison instanceof LesserComparison) {
+            return leftValue < rightValue;
+        } else if (comparison instanceof GreaterEqualComparison) {
+            return leftValue >= rightValue;
+        } else if (comparison instanceof LesserEqualComparison) {
+            return leftValue <= rightValue;
+        } else if (comparison instanceof EqualComparison) {
+            return leftValue == rightValue;
+        } else if (comparison instanceof NotEqualComparison) {
+            return leftValue != rightValue;
+        } else {
+            throw new RuntimeException("Unsupported comparison type: " + comparison.getClass().getSimpleName());
         }
     }
 

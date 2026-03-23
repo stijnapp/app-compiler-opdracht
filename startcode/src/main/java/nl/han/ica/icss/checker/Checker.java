@@ -3,6 +3,8 @@ package nl.han.ica.icss.checker;
 import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.comparisons.EqualComparison;
+import nl.han.ica.icss.ast.comparisons.NotEqualComparison;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
@@ -181,6 +183,32 @@ public class Checker {
 
             // one side has to be scalar, so return the other type
             return typeofLhs == ExpressionType.SCALAR ? typeofRhs : typeofLhs;
+        } else if (expression instanceof Comparison) {
+            Comparison comparison = (Comparison) expression;
+            ExpressionType typeofLhs = getExpressionType(((Comparison) expression).lhs);
+            ExpressionType typeofRhs = getExpressionType(((Comparison) expression).rhs);
+
+            if (typeofLhs == null || typeofRhs == null) return null;
+
+            // TODO: extra: check for valid comparisons. eg, only allowed:
+            //   comparing same types with == or !=
+            //   comparing scalar, pixel, or percentage with >, <, >=, <= (given the types are the same, or one is scalar)
+
+            if (typeofLhs == typeofRhs && (comparison instanceof EqualComparison || comparison instanceof NotEqualComparison)) {
+                return ExpressionType.BOOL;
+            }
+
+            boolean LhsIsComparable = (typeofLhs == ExpressionType.SCALAR || typeofLhs == ExpressionType.PIXEL || typeofLhs == ExpressionType.PERCENTAGE);
+            boolean RhsIsComparable = (typeofRhs == ExpressionType.SCALAR || typeofRhs == ExpressionType.PIXEL || typeofRhs == ExpressionType.PERCENTAGE);
+            boolean eitherIsScalar = (typeofLhs == ExpressionType.SCALAR || typeofRhs == ExpressionType.SCALAR);
+            boolean sizeBasedComparison = !(comparison instanceof EqualComparison || comparison instanceof NotEqualComparison);
+
+            if (LhsIsComparable && RhsIsComparable && (typeofLhs == typeofRhs || eitherIsScalar) && sizeBasedComparison) {
+                return ExpressionType.BOOL;
+            }
+
+            expression.setError("Incompatible comparison types: '" + typeofLhs + "' and '" + typeofRhs + "' with operator: " + comparison.getClass().getSimpleName());
+            return null;
         }
 
         // this should never be reached. Maybe when a new expression is added and not handled yet?
