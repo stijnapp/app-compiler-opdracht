@@ -40,6 +40,9 @@ public class Generator {
             // close the stylerule
             sb.append("}\n\n");
         }
+
+        if (sb.length() == 0) return "";
+
         return sb.delete(sb.length() - 2, sb.length()).toString();
     }
 

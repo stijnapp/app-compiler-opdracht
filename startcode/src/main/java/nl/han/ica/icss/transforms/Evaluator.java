@@ -72,6 +72,13 @@ public class Evaluator implements Transform {
                         newBody.addAll(ifClause.elseClause.body);
                     }
                     // if condition is false and there is no else, just ignore the if-clause (which won't add it to the new body)
+                } else if (child instanceof StyleRule) {
+                    // delete empty StyleRules after evaluating the body
+                    StyleRule styleRule = (StyleRule) child;
+                    applyNode(styleRule);
+                    if (!styleRule.body.isEmpty()) {
+                        newBody.add(styleRule);
+                    }
                 } else {
                     // for any other child, just check and add it to the nwe body
                     applyNode(child);
