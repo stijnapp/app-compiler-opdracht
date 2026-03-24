@@ -10,7 +10,6 @@ import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,7 +39,26 @@ public class Checker {
             VariableAssignment variableAssignment = (VariableAssignment) node;
             String name = variableAssignment.name.name;
             ExpressionType varType = getExpressionType(variableAssignment.expression);
-            variableTypes.getFirst().put(name, varType);
+
+            // check if variable is already defined in current scope, and if it's the same type
+            boolean found = false;
+            for (HashMap<String, ExpressionType> scope : variableTypes) {
+                if (scope.containsKey(name)) {
+                    found = true;
+                    ExpressionType existingType = scope.get(name);
+                    if (existingType != varType) {
+                        // set error if types don't match
+                        variableAssignment.setError("Variable '" + name + "' can't be redefined with a different type. Existing type: " + existingType + ", new type: " + varType);
+                    }
+                    // don't need to update the value, since this is the checker, not the evaluator. just break loop
+                    break;
+                }
+            }
+
+            if (!found) {
+                // if not found, add it to the current scope (which is the first hashmap in the list)
+                variableTypes.getFirst().put(name, varType);
+            }
         }
         // CH01 + CH06: variables should be defined, and only used within their scope
         else if (node instanceof VariableReference) {

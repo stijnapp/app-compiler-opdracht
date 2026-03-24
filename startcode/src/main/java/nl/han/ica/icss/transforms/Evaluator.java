@@ -52,7 +52,19 @@ public class Evaluator implements Transform {
                     VariableAssignment variableAssignment = (VariableAssignment) child;
                     String name = variableAssignment.name.name;
                     Literal value = calculateExpressionValue(variableAssignment.expression);
-                    variableValues.getFirst().put(name, value);
+
+                    boolean found = false;
+                    for (HashMap<String, Literal> scope : variableValues) {
+                        if (scope.containsKey(name)) {
+                            scope.put(name, value);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        variableValues.getFirst().put(name, value);
+                    }
                 }
 
                 // TR02: replace all if-else's with actual body (or nothing) based on condition
