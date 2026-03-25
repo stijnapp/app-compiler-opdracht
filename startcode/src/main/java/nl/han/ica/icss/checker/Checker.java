@@ -19,10 +19,26 @@ public class Checker {
     // symbol table: a list (which is mostly used as an iterable stack) of hashmaps
     // each hashmap represents a scope with its variable's names and types
     private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
+    private HashMap<String, FunctionDefinition> availableFunctions;
 
     public void check(AST ast) {
         // reset symbol table when check is called (which is the root of the checker)
         variableTypes = new HANLinkedList<>();
+        availableFunctions = new HashMap<>();
+
+        // pre-population of available functions and duplicate function check
+        for (ASTNode node : ast.root.getChildren()) {
+            if (node instanceof FunctionDefinition) {
+                FunctionDefinition functionDefinition = (FunctionDefinition) node;
+                String functionName = functionDefinition.name;
+                if (availableFunctions.containsKey(functionName)) {
+                    functionDefinition.setError("Function '" + functionName + "' is already defined");
+                } else {
+                    availableFunctions.put(functionName, functionDefinition);
+                }
+            }
+        }
+
         checkNode(ast.root);
     }
 
@@ -60,6 +76,7 @@ public class Checker {
                 variableTypes.getFirst().put(name, varType);
             }
         }
+
         // CH01 + CH06: variables should be defined, and only used within their scope
         else if (node instanceof VariableReference) {
             VariableReference variableReference = (VariableReference) node;
@@ -149,6 +166,13 @@ public class Checker {
             }
         }
 
+        // skip function definitions, because they are checked when called.
+        else if (node instanceof FunctionDefinition) {
+            // skipping also prevents the checkNode from being called on its children,
+            //   which otherwise will cause errors of undefined variables (it doesn't recognize params as params)
+            return;
+        }
+
         // check all children of this node for errors
         for (ASTNode child : node.getChildren()) {
             checkNode(child);
@@ -229,6 +253,63 @@ public class Checker {
 
             // return type is always bool, so if no errors, return bool
             return ExpressionType.BOOL;
+        } else if (expression instanceof FunctionReference) {
+            FunctionReference reference = (FunctionReference) expression;
+
+            // check if function exists
+            if (!availableFunctions.containsKey(reference.name)) {
+                reference.setError("Function '" + reference.name + "' is not defined");
+                return null;
+            }
+
+            FunctionDefinition function = availableFunctions.get(reference.name);
+
+            // check if return statement exists
+            if (function.returnValue == null || function.returnValue.expression == null) {
+                reference.setError("Function '" + reference.name + "' does not have a return statement");
+                variableTypes.removeFirst();
+                return null;
+            }
+
+            // check if parameter amount is correct
+            if (function.parameters.size() != reference.arguments.size()) {
+                reference.setError("Function '" + reference.name + "' expects " + function.parameters.size() + " arguments, got " + reference.arguments.size());
+                return null;
+            }
+
+            // create a new temp scope for within the function, and add the parameters
+            HashMap<String, ExpressionType> functionScope = new HashMap<>();
+            for (int i = 0; i < function.parameters.size(); i++) {
+                // get the name that the inside of the function expects
+                String paramName = function.parameters.get(i).name;
+                // get the type of the argument that is passed to the function
+                ExpressionType argType = getExpressionType(reference.arguments.get(i));
+
+                if (argType == null) continue;
+
+                functionScope.put(paramName, argType);
+            }
+            variableTypes.addFirst(functionScope);
+
+            // check all body nodes normally
+            for (ASTNode node : function.body) {
+                // TODO: this will still find variables outside the function... only the function scope should be allowed
+                checkNode(node);
+            }
+
+            // get the type of the return value
+            ExpressionType returnType = getExpressionType(function.returnValue.expression);
+
+            // remove temp function scope
+            variableTypes.removeFirst();
+
+            // last check if return type is null, if so, there is an error within the function
+            if (returnType == null) {
+                reference.setError("Could not determine return type of function '" + reference.name + "'");
+                return null;
+            }
+
+            return returnType;
         }
 
         // this should never be reached. Maybe when a new expression is added and not handled yet?

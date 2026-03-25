@@ -4,7 +4,7 @@ BaseWidth := 10px;
 Amount := 6;
 
 p {
-    width: CalWidth[BaseWidth, Amount];
+    width: CalcWidth[BaseWidth, Amount];
 }
 
 fun CalcWidth[Width, Times] {
