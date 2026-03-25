@@ -1,0 +1,13 @@
+// test functions
+
+BaseWidth := 10px;
+Amount := 6;
+
+p {
+    width: CalWidth[BaseWidth, Amount];
+}
+
+fun CalcWidth[Width, Times] {
+    Result := Width * Times;
+    return Result;
+}

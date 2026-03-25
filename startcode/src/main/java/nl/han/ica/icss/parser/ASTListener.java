@@ -166,6 +166,42 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
+    public void enterFunctionReferenceExpression(ICSSParser.FunctionReferenceExpressionContext ctx) {
+        FunctionReference functionReference = new FunctionReference(ctx.name.getText());
+        currentContainer.peek().addChild(functionReference);
+        currentContainer.push(functionReference);
+    }
+
+    @Override
+    public void exitFunctionReferenceExpression(ICSSParser.FunctionReferenceExpressionContext ctx) {
+        currentContainer.pop();
+    }
+
+    @Override
+    public void enterFunction(ICSSParser.FunctionContext ctx) {
+        FunctionDefinition functionDefinition = new FunctionDefinition(ctx.name.getText());
+        currentContainer.peek().addChild(functionDefinition);
+        currentContainer.push(functionDefinition);
+    }
+
+    @Override
+    public void exitFunction(ICSSParser.FunctionContext ctx) {
+        FunctionDefinition function = (FunctionDefinition) currentContainer.pop();
+    }
+
+    @Override
+    public void enterReturnstmt(ICSSParser.ReturnstmtContext ctx) {
+        ReturnStatement returnStatement = new ReturnStatement();
+        currentContainer.peek().addChild(returnStatement);
+        currentContainer.push(returnStatement);
+    }
+
+    @Override
+    public void exitReturnstmt(ICSSParser.ReturnstmtContext ctx) {
+        currentContainer.pop();
+    }
+
+    @Override
     public void enterStylerule(ICSSParser.StyleruleContext ctx) {
         StyleRule stylerule = new StyleRule();
         currentContainer.peek().addChild(stylerule);

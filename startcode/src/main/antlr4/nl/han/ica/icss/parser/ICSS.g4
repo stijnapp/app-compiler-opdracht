@@ -10,6 +10,10 @@ BOX_BRACKET_CLOSE: ']';
 PAREN_OPEN: '(';
 PAREN_CLOSE: ')';
 
+// function support
+FUNCTION: 'fun';
+RETURN: 'return';
+
 // Literals
 TRUE: 'TRUE';
 FALSE: 'FALSE';
@@ -22,7 +26,7 @@ COLOR: '#' [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-
 // Specific identifiers for id's and css classes
 ID_IDENT: '#' [a-z0-9\-]+;
 CLASS_IDENT: '.' [a-z0-9\-]+;
-SELECTOR_SEPARATOR: ',';
+SEPARATOR: ',';
 
 // General identifiers
 LOWER_IDENT: [a-z] [a-z0-9\-]*;
@@ -52,13 +56,13 @@ NOT_EQUAL: '!=';
 
 
 //--- PARSER: ---
-stylesheet  : (assignment | stylerule)* EOF;
+stylesheet  : (assignment | stylerule | function)* EOF;
 
 // variable assignment
 assignment  : variable ASSIGNMENT_OPERATOR expression SEMICOLON;
 
 // style rule
-stylerule   : selector (SELECTOR_SEPARATOR selector)* OPEN_BRACE body CLOSE_BRACE;
+stylerule   : selector (SEPARATOR selector)* OPEN_BRACE body CLOSE_BRACE;
 selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
@@ -68,6 +72,7 @@ expression  : PAREN_OPEN expression PAREN_CLOSE #ParenthesizedExpression
             | expression op=(PLUS | MIN) expression #OperationExpression
             | expression comp=(GREATER | LESSER | GREATER_EQUAL | LESSER_EQUAL | EQUAL | NOT_EQUAL) expression #ComparisonExpression
             | literal #LiteralExpression
+            | name=CAPITAL_IDENT BOX_BRACKET_OPEN (expression (SEPARATOR expression)*)? BOX_BRACKET_CLOSE #FunctionReferenceExpression
             | variable #VariableExpression
             ;
 
@@ -75,8 +80,11 @@ expression  : PAREN_OPEN expression PAREN_CLOSE #ParenthesizedExpression
 ifclause    : IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE OPEN_BRACE body CLOSE_BRACE elseclause?;
 elseclause  : ELSE OPEN_BRACE body CLOSE_BRACE;
 
-body       : (declaration | ifclause | assignment)*;
+body        : (declaration | ifclause | assignment)*;
 
+// functions
+function    : FUNCTION name=CAPITAL_IDENT BOX_BRACKET_OPEN (variable (SEPARATOR variable)*)? BOX_BRACKET_CLOSE OPEN_BRACE (assignment | ifclause)* returnstmt CLOSE_BRACE;
+returnstmt  : RETURN expression SEMICOLON;
 
 // basics
 variable    : CAPITAL_IDENT;
