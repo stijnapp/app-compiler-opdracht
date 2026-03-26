@@ -1,5 +1,14 @@
 // test functions
 
+fun TimesTwo[Value] {
+    Answer := Value * 2;
+    if [Value > 100] {
+        Answer := Answer - 100;
+    }
+    // only 1 return statement allowed (for now?)
+    return Answer;
+}
+
 BaseWidth := 10px;
 Amount := 6;
 
@@ -9,5 +18,5 @@ p {
 
 fun CalcWidth[Width, Times] {
     Result := Width * Times;
-    return Result;
+    return TimesTwo[Result];
 }

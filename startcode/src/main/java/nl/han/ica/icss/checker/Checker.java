@@ -267,7 +267,6 @@ public class Checker {
             // check if return statement exists
             if (function.returnValue == null || function.returnValue.expression == null) {
                 reference.setError("Function '" + reference.name + "' does not have a return statement");
-                variableTypes.removeFirst();
                 return null;
             }
 
@@ -277,7 +276,7 @@ public class Checker {
                 return null;
             }
 
-            // create a new temp scope for within the function, and add the parameters
+            // create new scope for function, with only it's parameters
             HashMap<String, ExpressionType> functionScope = new HashMap<>();
             for (int i = 0; i < function.parameters.size(); i++) {
                 // get the name that the inside of the function expects
@@ -285,23 +284,27 @@ public class Checker {
                 // get the type of the argument that is passed to the function
                 ExpressionType argType = getExpressionType(reference.arguments.get(i));
 
-                if (argType == null) continue;
-
-                functionScope.put(paramName, argType);
+                if (argType != null) {
+                    functionScope.put(paramName, argType);
+                }
             }
+
+            // Move symbol table to a temporary variable, so the function can have its own scope without affecting the main one
+            IHANLinkedList<HashMap<String, ExpressionType>> globalScope = variableTypes;
+            // clear the main symbol table
+            variableTypes = new HANLinkedList<>();
             variableTypes.addFirst(functionScope);
 
             // check all body nodes normally
             for (ASTNode node : function.body) {
-                // TODO: this will still find variables outside the function... only the function scope should be allowed
                 checkNode(node);
             }
 
             // get the type of the return value
             ExpressionType returnType = getExpressionType(function.returnValue.expression);
 
-            // remove temp function scope
-            variableTypes.removeFirst();
+            // restore the original symbol table
+            variableTypes = globalScope;
 
             // last check if return type is null, if so, there is an error within the function
             if (returnType == null) {
