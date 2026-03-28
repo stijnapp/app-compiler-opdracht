@@ -8,6 +8,7 @@ import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
+import nl.han.ica.icss.ast.types.ExpressionType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,18 +16,29 @@ import java.util.HashMap;
 public class Evaluator implements Transform {
 
     private IHANLinkedList<HashMap<String, Literal>> variableValues;
-
-    public Evaluator() {
-        variableValues = new HANLinkedList<>();
-    }
+    private HashMap<String, FunctionDefinition> availableFunctions;
 
     @Override
     public void apply(AST ast) {
         variableValues = new HANLinkedList<>();
+        availableFunctions = new HashMap<>();
+
+        // pre-population of available functions
+        for (ASTNode node : ast.root.getChildren()) {
+            if (node instanceof FunctionDefinition) {
+                FunctionDefinition functionDefinition = (FunctionDefinition) node;
+                String functionName = functionDefinition.name;
+                availableFunctions.put(functionName, functionDefinition);
+            }
+        }
+
         applyNode(ast.root);
+
+        // TODO: remove function definitions from the AST (dont do this before this point)
     }
 
     private void applyNode(ASTNode node) {
+        // nodes with body:
         if (node instanceof Stylesheet || node instanceof StyleRule || node instanceof IfClause || node instanceof ElseClause) {
             // new scope, so push new hashmap to list
             variableValues.addFirst(new HashMap<>());
@@ -71,12 +83,11 @@ public class Evaluator implements Transform {
                 else if (child instanceof IfClause) {
                     IfClause ifClause = (IfClause) child;
 
-                    applyNode(ifClause);
-
                     BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
 
                     if (conditionLiteral.value) {
                         // condition is true, add if body to new body
+                        applyNode(ifClause);
                         newBody.addAll(ifClause.body);
                     } else if (ifClause.elseClause != null) {
                         // condition is false and there is an else, add else body to new body
@@ -163,6 +174,36 @@ public class Evaluator implements Transform {
 
             boolean resultValue = calculateComparisonResult(comparison, leftLiteral, rightLiteral);
             return new BoolLiteral(resultValue);
+        } else if (expression instanceof FunctionReference) {
+            // TODO: dont transform the actual function. this will break the next calls
+            FunctionReference functionReference = (FunctionReference) expression;
+            String functionName = functionReference.name;
+            FunctionDefinition functionDefinition = availableFunctions.get(functionName);
+
+            // create new scope for within the function
+            HashMap<String, Literal> functionScope = new HashMap<>();
+
+
+            for (int i = 0; i < functionDefinition.parameters.size(); i++) {
+                String parameterName = functionDefinition.parameters.get(i).name;
+                Literal argumentValue = calculateExpressionValue(functionReference.arguments.get(i));
+                functionScope.put(parameterName, argumentValue);
+            }
+
+            // temporarily replace
+            IHANLinkedList<HashMap<String, Literal>> outerScope = variableValues;
+            variableValues = new HANLinkedList<>();
+            variableValues.addFirst(functionScope);
+
+            // execute the function body
+            for (ASTNode node : functionDefinition.body) {
+                applyNode(node);
+            }
+
+            // restore the outer scope
+            variableValues = outerScope;
+
+            return calculateExpressionValue(functionDefinition.returnValue.expression);
         }
         // Shouldn't be reached, except if the code has changes in the future without updating the transformer
         throw new RuntimeException("Unsupported expression type: " + expression.getClass().getSimpleName());
