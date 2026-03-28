@@ -28,8 +28,7 @@ public class Checker {
 
         // pre-population of available functions and duplicate function check
         for (ASTNode node : ast.root.getChildren()) {
-            if (node instanceof FunctionDefinition) {
-                FunctionDefinition functionDefinition = (FunctionDefinition) node;
+            if (node instanceof FunctionDefinition functionDefinition) {
                 String functionName = functionDefinition.name;
                 if (availableFunctions.containsKey(functionName)) {
                     functionDefinition.setError("Function '" + functionName + "' is already defined");
@@ -51,8 +50,7 @@ public class Checker {
         }
 
         // variable assignment
-        if (node instanceof VariableAssignment) {
-            VariableAssignment variableAssignment = (VariableAssignment) node;
+        if (node instanceof VariableAssignment variableAssignment) {
             String name = variableAssignment.name.name;
             ExpressionType varType = getExpressionType(variableAssignment.expression);
 
@@ -78,8 +76,7 @@ public class Checker {
         }
 
         // CH01 + CH06: variables should be defined, and only used within their scope
-        else if (node instanceof VariableReference) {
-            VariableReference variableReference = (VariableReference) node;
+        else if (node instanceof VariableReference variableReference) {
             String name = variableReference.name;
             // search through the variable name in the symbol table, starting from current scope and going up
             boolean found = false;
@@ -120,8 +117,7 @@ public class Checker {
         }
 
         // CH04: check if a property's value is of the correct type
-        else if (node instanceof Declaration) {
-            Declaration declaration = (Declaration) node;
+        else if (node instanceof Declaration declaration) {
             String propertyName = declaration.property.name;
 
             // propertyName must be one of color, background-color, width, height
@@ -154,8 +150,7 @@ public class Checker {
         }
 
         // CH05: check if if-clause is boolean
-        else if (node instanceof IfClause) {
-            IfClause ifClause = (IfClause) node;
+        else if (node instanceof IfClause ifClause) {
             ExpressionType conditionType = getExpressionType(ifClause.conditionalExpression);
 
             // skip if existing error
@@ -188,18 +183,14 @@ public class Checker {
     private ExpressionType getExpressionType(Expression expression) {
         if (expression instanceof Literal) {
             // simple checks for literal types
-            switch (expression.getClass().getSimpleName()) {
-                case "BoolLiteral":
-                    return ExpressionType.BOOL;
-                case "ColorLiteral":
-                    return ExpressionType.COLOR;
-                case "PercentageLiteral":
-                    return ExpressionType.PERCENTAGE;
-                case "PixelLiteral":
-                    return ExpressionType.PIXEL;
-                case "ScalarLiteral":
-                    return ExpressionType.SCALAR;
-            }
+            return switch (expression.getClass().getSimpleName()) {
+                case "BoolLiteral" -> ExpressionType.BOOL;
+                case "ColorLiteral" -> ExpressionType.COLOR;
+                case "PercentageLiteral" -> ExpressionType.PERCENTAGE;
+                case "PixelLiteral" -> ExpressionType.PIXEL;
+                case "ScalarLiteral" -> ExpressionType.SCALAR;
+                default -> null; // should never be reached
+            };
         } else if (expression instanceof VariableReference) {
             // search for variable in symbol table, starting from current scope and going up
             for (HashMap<String, ExpressionType> scope : variableTypes) {
@@ -234,10 +225,9 @@ public class Checker {
 
             // one side has to be scalar, so return the other type
             return typeofLhs == ExpressionType.SCALAR ? typeofRhs : typeofLhs;
-        } else if (expression instanceof Comparison) {
-            Comparison comparison = (Comparison) expression;
-            ExpressionType typeofLhs = getExpressionType(((Comparison) expression).lhs);
-            ExpressionType typeofRhs = getExpressionType(((Comparison) expression).rhs);
+        } else if (expression instanceof Comparison comparison) {
+            ExpressionType typeofLhs = getExpressionType(comparison.lhs);
+            ExpressionType typeofRhs = getExpressionType(comparison.rhs);
 
             if (typeofLhs == null || typeofRhs == null) return null;
 
@@ -253,8 +243,7 @@ public class Checker {
 
             // return type is always bool, so if no errors, return bool
             return ExpressionType.BOOL;
-        } else if (expression instanceof FunctionReference) {
-            FunctionReference reference = (FunctionReference) expression;
+        } else if (expression instanceof FunctionReference reference) {
 
             // check if function exists
             if (!availableFunctions.containsKey(reference.name)) {

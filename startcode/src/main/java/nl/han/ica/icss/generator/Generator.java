@@ -13,10 +13,9 @@ public class Generator {
         StringBuilder sb = new StringBuilder();
         for (ASTNode node : ast.root.getChildren()) {
             // ignore anything but StyleRule
-            if (!(node instanceof StyleRule)) continue;
+            if (!(node instanceof StyleRule stylerule)) continue;
 
             // generate the selector
-            StyleRule stylerule = (StyleRule) node;
             for (Selector selector : stylerule.selectors) {
                 sb.append(selector.toString()).append(", ");
             }
@@ -25,9 +24,7 @@ public class Generator {
             // generate the body
             for (ASTNode bodyNode : stylerule.body) {
                 // ignore anything but declaration
-                if (!(bodyNode instanceof Declaration)) continue;
-
-                Declaration declaration = (Declaration) bodyNode;
+                if (!(bodyNode instanceof Declaration declaration)) continue;
 
                 // GE02: indent with 2 spaces
                 sb.append("  ")
@@ -41,20 +38,17 @@ public class Generator {
             sb.append("}\n\n");
         }
 
-        if (sb.length() == 0) return "";
+        if (sb.isEmpty()) return "";
 
         return sb.delete(sb.length() - 2, sb.length()).toString();
     }
 
     private String formatLiteral(Literal literal) {
-        if (literal instanceof ColorLiteral) {
-            return ((ColorLiteral) literal).value;
-        } else if (literal instanceof PixelLiteral) {
-            return ((PixelLiteral) literal).value + "px";
-        } else if (literal instanceof PercentageLiteral) {
-            return ((PercentageLiteral) literal).value + "%";
-        } else {
-            return "undefined";
-        }
+        return switch (literal) {
+            case ColorLiteral colorLiteral -> colorLiteral.value;
+            case PixelLiteral pixelLiteral -> pixelLiteral.value + "px";
+            case PercentageLiteral percentageLiteral -> percentageLiteral.value + "%";
+            case null, default -> "undefined";
+        };
     }
 }

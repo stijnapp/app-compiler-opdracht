@@ -8,7 +8,6 @@ import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
 import nl.han.ica.icss.ast.operations.SubtractOperation;
-import nl.han.ica.icss.ast.types.ExpressionType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,8 +24,7 @@ public class Evaluator implements Transform {
 
         // pre-population of available functions
         for (ASTNode node : ast.root.getChildren()) {
-            if (node instanceof FunctionDefinition) {
-                FunctionDefinition functionDefinition = (FunctionDefinition) node;
+            if (node instanceof FunctionDefinition functionDefinition) {
                 String functionName = functionDefinition.name;
                 availableFunctions.put(functionName, functionDefinition);
             }
@@ -43,25 +41,20 @@ public class Evaluator implements Transform {
             // new scope, so push new hashmap to list
             variableValues.addFirst(new HashMap<>());
 
-            ArrayList<ASTNode> currentBody;
-            if (node instanceof Stylesheet) {
-                currentBody = ((Stylesheet) node).body;
-            } else if (node instanceof StyleRule) {
-                currentBody = ((StyleRule) node).body;
-            } else if (node instanceof IfClause) {
-                currentBody = ((IfClause) node).body;
-            } else {
-                currentBody = ((ElseClause) node).body;
-            }
+            ArrayList<ASTNode> currentBody = switch (node) {
+                case Stylesheet stylesheet -> stylesheet.body;
+                case StyleRule styleRule -> styleRule.body;
+                case IfClause ifClause -> ifClause.body;
+                default -> ((ElseClause) node).body;
+            };
 
             ArrayList<ASTNode> newBody = new ArrayList<>();
 
             // for each child, check if it should end up in the new body
             // also calculate variable assignments
             for (ASTNode child : currentBody) {
-                if (child instanceof VariableAssignment) {
+                if (child instanceof VariableAssignment variableAssignment) {
                     // save the variable's name and value in the symbol table
-                    VariableAssignment variableAssignment = (VariableAssignment) child;
                     String name = variableAssignment.name.name;
                     Literal value = calculateExpressionValue(variableAssignment.expression);
 
@@ -80,8 +73,7 @@ public class Evaluator implements Transform {
                 }
 
                 // TR02: replace all if-else's with actual body (or nothing) based on condition
-                else if (child instanceof IfClause) {
-                    IfClause ifClause = (IfClause) child;
+                else if (child instanceof IfClause ifClause) {
 
                     BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
 
@@ -95,9 +87,8 @@ public class Evaluator implements Transform {
                         newBody.addAll(ifClause.elseClause.body);
                     }
                     // if condition is false and there is no else, just ignore the if-clause (which won't add it to the new body)
-                } else if (child instanceof StyleRule) {
+                } else if (child instanceof StyleRule styleRule) {
                     // delete empty StyleRules after evaluating the body
-                    StyleRule styleRule = (StyleRule) child;
                     applyNode(styleRule);
                     if (!styleRule.body.isEmpty()) {
                         newBody.add(styleRule);
@@ -110,21 +101,17 @@ public class Evaluator implements Transform {
             }
 
             // replace the current body with the new body with solved if-else's
-            if (node instanceof Stylesheet) {
-                ((Stylesheet) node).body = newBody;
-            } else if (node instanceof StyleRule) {
-                ((StyleRule) node).body = newBody;
-            } else if (node instanceof IfClause) {
-                ((IfClause) node).body = newBody;
-            } else {
-                ((ElseClause) node).body = newBody;
+            switch (node) {
+                case Stylesheet stylesheet -> stylesheet.body = newBody;
+                case StyleRule styleRule -> styleRule.body = newBody;
+                case IfClause ifClause -> ifClause.body = newBody;
+                default -> ((ElseClause) node).body = newBody;
             }
         }
 
         // TR01: replace all variable references with their actual value
         // (also handles all operations and literals)
-        if (node instanceof Declaration) {
-            Declaration declaration = (Declaration) node;
+        if (node instanceof Declaration declaration) {
             declaration.expression = calculateExpressionValue(declaration.expression);
         }
 
@@ -137,8 +124,7 @@ public class Evaluator implements Transform {
     private Literal calculateExpressionValue(Expression expression) {
         if (expression instanceof Literal) {
             return (Literal) expression;
-        } else if (expression instanceof VariableReference) {
-            VariableReference variableReference = (VariableReference) expression;
+        } else if (expression instanceof VariableReference variableReference) {
             String name = variableReference.name;
             for (HashMap<String, Literal> scope : variableValues) {
                 if (scope.containsKey(name)) {
@@ -147,8 +133,7 @@ public class Evaluator implements Transform {
             }
             // variable not found. Should not be possible
             throw new RuntimeException("Variable not found: " + name);
-        } else if (expression instanceof Operation) {
-            Operation operation = (Operation) expression;
+        } else if (expression instanceof Operation operation) {
             Literal leftLiteral = calculateExpressionValue(operation.lhs);
             Literal rightLiteral = calculateExpressionValue(operation.rhs);
 
@@ -167,16 +152,14 @@ public class Evaluator implements Transform {
             } else {
                 return new ScalarLiteral(resultValue);
             }
-        } else if (expression instanceof Comparison) {
-            Comparison comparison = (Comparison) expression;
+        } else if (expression instanceof Comparison comparison) {
             Literal leftLiteral = calculateExpressionValue(comparison.lhs);
             Literal rightLiteral = calculateExpressionValue(comparison.rhs);
 
             boolean resultValue = calculateComparisonResult(comparison, leftLiteral, rightLiteral);
             return new BoolLiteral(resultValue);
-        } else if (expression instanceof FunctionReference) {
+        } else if (expression instanceof FunctionReference functionReference) {
             // TODO: dont transform the actual function. this will break the next calls
-            FunctionReference functionReference = (FunctionReference) expression;
             String functionName = functionReference.name;
             FunctionDefinition functionDefinition = availableFunctions.get(functionName);
 
@@ -210,44 +193,32 @@ public class Evaluator implements Transform {
     }
 
     private int calculateResultValue(Operation operation, int leftValue, int rightValue) {
-        if (operation instanceof AddOperation) {
-            return leftValue + rightValue;
-        } else if (operation instanceof SubtractOperation) {
-            return leftValue - rightValue;
-        } else if (operation instanceof MultiplyOperation) {
-            return leftValue * rightValue;
-        } else {
-            throw new RuntimeException("Unsupported operation type: " + operation.getClass().getSimpleName());
-        }
+        return switch (operation) {
+            case AddOperation ignored -> leftValue + rightValue;
+            case SubtractOperation ignored -> leftValue - rightValue;
+            case MultiplyOperation ignored -> leftValue * rightValue;
+            default -> throw new RuntimeException("Unsupported operation type: " + operation.getClass().getSimpleName());
+        };
     }
 
     private boolean calculateComparisonResult(Comparison comparison, Literal leftValue, Literal rightValue) {
-        if (comparison instanceof EqualComparison) {
-            return leftValue.equals(rightValue);
-        } else if (comparison instanceof NotEqualComparison) {
-            return !leftValue.equals(rightValue);
-        } else if (comparison instanceof GreaterComparison) {
-            return getOperandValue(leftValue) > getOperandValue(rightValue);
-        } else if (comparison instanceof LesserComparison) {
-            return getOperandValue(leftValue) < getOperandValue(rightValue);
-        } else if (comparison instanceof GreaterEqualComparison) {
-            return getOperandValue(leftValue) >= getOperandValue(rightValue);
-        } else if (comparison instanceof LesserEqualComparison) {
-            return getOperandValue(leftValue) <= getOperandValue(rightValue);
-        } else {
-            throw new RuntimeException("Unsupported comparison type: " + comparison.getClass().getSimpleName());
-        }
+        return switch (comparison) {
+            case EqualComparison ignored -> leftValue.equals(rightValue);
+            case NotEqualComparison ignored -> !leftValue.equals(rightValue);
+            case GreaterComparison ignored -> getOperandValue(leftValue) > getOperandValue(rightValue);
+            case LesserComparison ignored -> getOperandValue(leftValue) < getOperandValue(rightValue);
+            case GreaterEqualComparison ignored -> getOperandValue(leftValue) >= getOperandValue(rightValue);
+            case LesserEqualComparison ignored -> getOperandValue(leftValue) <= getOperandValue(rightValue);
+            default -> throw new RuntimeException("Unsupported comparison type: " + comparison.getClass().getSimpleName());
+        };
     }
 
     private int getOperandValue(Literal operand) {
-        if (operand instanceof PercentageLiteral) {
-            return ((PercentageLiteral) operand).value;
-        } else if (operand instanceof PixelLiteral) {
-            return ((PixelLiteral) operand).value;
-        } else if (operand instanceof ScalarLiteral) {
-            return ((ScalarLiteral) operand).value;
-        } else {
-            throw new RuntimeException("Unsupported literal type: " + operand.getClass().getSimpleName());
-        }
+        return switch (operand) {
+            case PercentageLiteral percentageLiteral -> percentageLiteral.value;
+            case PixelLiteral pixelLiteral -> pixelLiteral.value;
+            case ScalarLiteral scalarLiteral -> scalarLiteral.value;
+            default -> throw new RuntimeException("Unsupported literal type: " + operand.getClass().getSimpleName());
+        };
     }
 }

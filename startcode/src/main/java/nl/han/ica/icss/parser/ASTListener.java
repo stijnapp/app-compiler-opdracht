@@ -83,23 +83,16 @@ public class ASTListener extends ICSSBaseListener {
     // OperationExpression is a subrule of expression, defined in the grammar with `#OperationExpression`
     // still, it has multiple operators (+, -, *), so we need to manually check which one it is.
     public void enterOperationExpression(ICSSParser.OperationExpressionContext ctx) {
-        Operation operation;
-        // `.op` is possible due to defining it in the grammar with `op=...`
-        switch (ctx.op.getType()) {
-            case ICSSParser.PLUS:
-                operation = new AddOperation();
-                break;
-            case ICSSParser.MIN:
-                operation = new SubtractOperation();
-                break;
-            case ICSSParser.MUL:
-                operation = new MultiplyOperation();
-                break;
-            default:
+        Operation operation = switch (ctx.op.getType()) {
+            case ICSSParser.PLUS -> new AddOperation();
+            case ICSSParser.MIN -> new SubtractOperation();
+            case ICSSParser.MUL -> new MultiplyOperation();
+            default ->
                 // This shouldn't be reached, because the grammar should only allow +, - and *
                 // but just to be sure, throw an exception (with line and position, because it's cool that that's possible with ANTLR)
-                throw new RuntimeException("Unknown operator: " + ctx.op.getText() + " at line " + ctx.op.getLine() + ", position " + ctx.op.getCharPositionInLine());
-        }
+                    throw new RuntimeException("Unknown operator: " + ctx.op.getText() + " at line " + ctx.op.getLine() + ", position " + ctx.op.getCharPositionInLine());
+        };
+        // `.op` is possible due to defining it in the grammar with `op=...`
         currentContainer.peek().addChild(operation);
         currentContainer.push(operation);
     }
@@ -111,30 +104,17 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterComparisonExpression(ICSSParser.ComparisonExpressionContext ctx) {
-        Comparison comparison;
+        Comparison comparison = switch (ctx.comp.getType()) {
+            case ICSSParser.GREATER -> new GreaterComparison();
+            case ICSSParser.LESSER -> new LesserComparison();
+            case ICSSParser.GREATER_EQUAL -> new GreaterEqualComparison();
+            case ICSSParser.LESSER_EQUAL -> new LesserEqualComparison();
+            case ICSSParser.EQUAL -> new EqualComparison();
+            case ICSSParser.NOT_EQUAL -> new NotEqualComparison();
+            default ->
+                    throw new RuntimeException("Unknown comparison operator: " + ctx.comp.getText() + " at line " + ctx.comp.getLine() + ", position " + ctx.comp.getCharPositionInLine());
+        };
         // same deal as with the operation expression, but now for the comparison operators
-        switch (ctx.comp.getType()) {
-            case ICSSParser.GREATER:
-                comparison = new GreaterComparison();
-                break;
-            case ICSSParser.LESSER:
-                comparison = new LesserComparison();
-                break;
-            case ICSSParser.GREATER_EQUAL:
-                comparison = new GreaterEqualComparison();
-                break;
-            case ICSSParser.LESSER_EQUAL:
-                comparison = new LesserEqualComparison();
-                break;
-            case ICSSParser.EQUAL:
-                comparison = new EqualComparison();
-                break;
-            case ICSSParser.NOT_EQUAL:
-                comparison = new NotEqualComparison();
-                break;
-            default:
-                throw new RuntimeException("Unknown comparison operator: " + ctx.comp.getText() + " at line " + ctx.comp.getLine() + ", position " + ctx.comp.getCharPositionInLine());
-        }
         currentContainer.peek().addChild(comparison);
         currentContainer.push(comparison);
     }
@@ -186,7 +166,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitFunction(ICSSParser.FunctionContext ctx) {
-        FunctionDefinition function = (FunctionDefinition) currentContainer.pop();
+        currentContainer.pop();
     }
 
     @Override
