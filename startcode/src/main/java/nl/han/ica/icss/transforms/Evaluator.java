@@ -189,15 +189,12 @@ public class Evaluator implements Transform {
             ArrayList<ASTNode> functionBodyCopy = new ArrayList<>(functionDefinition.body);
             // solving will put all variables in the function scope, so the return value can be calculated correctly
             createTransformedBody(functionBodyCopy);
+            Literal result = calculateExpressionValue(functionDefinition.returnValue.expression);
 
             // restore the previous (outer)scope
             variableValues = outerScope;
 
-            // print all variables in the function scope for debugging
-            System.out.println("Function scope for " + functionName + ": " + functionScope
-                    + " (with return value: " + functionScope.get(functionDefinition.returnValue.expression) + ")");
-
-            return calculateExpressionValue(functionDefinition.returnValue.expression);
+            return result;
         }
         // Shouldn't be reached, except if the code has changes in the future without updating the transformer
         throw new RuntimeException("Unsupported expression type: " + expression.getClass().getSimpleName());

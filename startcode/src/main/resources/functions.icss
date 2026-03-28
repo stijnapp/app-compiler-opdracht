@@ -2,7 +2,7 @@
 
 fun TimesTwo[Value] {
     Answer := Value * 2;
-    if [Value > 100] {
+    if [Answer > 100] {
         Answer := Answer - 100;
     }
     return Answer;
