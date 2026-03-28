@@ -5,7 +5,6 @@ fun TimesTwo[Value] {
     if [Value > 100] {
         Answer := Answer - 100;
     }
-    // only 1 return statement allowed (for now?)
     return Answer;
 }
 
@@ -14,9 +13,20 @@ Amount := 6;
 
 p {
     width: CalcWidth[BaseWidth, Amount];
+    height: TimesTwo[30%];
 }
 
 fun CalcWidth[Width, Times] {
     Result := Width * Times;
     return TimesTwo[Result];
 }
+
+
+/*
+Expected output:
+
+p {
+    width: 20px;
+    height: 60%;
+}
+*/

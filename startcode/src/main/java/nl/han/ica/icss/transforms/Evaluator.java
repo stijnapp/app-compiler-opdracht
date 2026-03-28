@@ -32,7 +32,8 @@ public class Evaluator implements Transform {
 
         applyNode(ast.root);
 
-        // TODO: remove function definitions from the AST (dont do this before this point)
+        // remove function definitions from the AST after all other transformations
+        ast.root.getChildren().removeIf(node -> node instanceof FunctionDefinition);
     }
 
     private void applyNode(ASTNode node) {
@@ -41,64 +42,14 @@ public class Evaluator implements Transform {
             // new scope, so push new hashmap to list
             variableValues.addFirst(new HashMap<>());
 
+            // get the current body, and create a new solved body
             ArrayList<ASTNode> currentBody = switch (node) {
                 case Stylesheet stylesheet -> stylesheet.body;
                 case StyleRule styleRule -> styleRule.body;
                 case IfClause ifClause -> ifClause.body;
                 default -> ((ElseClause) node).body;
             };
-
-            ArrayList<ASTNode> newBody = new ArrayList<>();
-
-            // for each child, check if it should end up in the new body
-            // also calculate variable assignments
-            for (ASTNode child : currentBody) {
-                if (child instanceof VariableAssignment variableAssignment) {
-                    // save the variable's name and value in the symbol table
-                    String name = variableAssignment.name.name;
-                    Literal value = calculateExpressionValue(variableAssignment.expression);
-
-                    boolean found = false;
-                    for (HashMap<String, Literal> scope : variableValues) {
-                        if (scope.containsKey(name)) {
-                            scope.put(name, value);
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
-                        variableValues.getFirst().put(name, value);
-                    }
-                }
-
-                // TR02: replace all if-else's with actual body (or nothing) based on condition
-                else if (child instanceof IfClause ifClause) {
-
-                    BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
-
-                    if (conditionLiteral.value) {
-                        // condition is true, add if body to new body
-                        applyNode(ifClause);
-                        newBody.addAll(ifClause.body);
-                    } else if (ifClause.elseClause != null) {
-                        // condition is false and there is an else, add else body to new body
-                        applyNode(ifClause.elseClause);
-                        newBody.addAll(ifClause.elseClause.body);
-                    }
-                    // if condition is false and there is no else, just ignore the if-clause (which won't add it to the new body)
-                } else if (child instanceof StyleRule styleRule) {
-                    // delete empty StyleRules after evaluating the body
-                    applyNode(styleRule);
-                    if (!styleRule.body.isEmpty()) {
-                        newBody.add(styleRule);
-                    }
-                } else {
-                    // for any other child, just check and add it to the nwe body
-                    applyNode(child);
-                    newBody.add(child);
-                }
-            }
+            ArrayList<ASTNode> newBody = createTransformedBody(currentBody);
 
             // replace the current body with the new body with solved if-else's
             switch (node) {
@@ -121,9 +72,67 @@ public class Evaluator implements Transform {
         }
     }
 
+    // function to split the body transformation
+    private ArrayList<ASTNode> createTransformedBody(ArrayList<ASTNode> currentBody) {
+        ArrayList<ASTNode> newBody = new ArrayList<>();
+
+        // for each child, check if it should end up in the new body
+        // also calculate variable assignments
+        for (ASTNode child : currentBody) {
+            switch (child) {
+                case VariableAssignment variableAssignment -> {
+                    // save the variable's name and value in the symbol table
+                    String name = variableAssignment.name.name;
+                    Literal value = calculateExpressionValue(variableAssignment.expression);
+
+                    boolean found = false;
+                    for (HashMap<String, Literal> scope : variableValues) {
+                        if (scope.containsKey(name)) {
+                            scope.put(name, value);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        variableValues.getFirst().put(name, value);
+                    }
+                }
+                // TR02: replace all if-else's with actual body (or nothing) based on condition
+                case IfClause ifClause -> {
+                    BoolLiteral conditionLiteral = (BoolLiteral) calculateExpressionValue(ifClause.conditionalExpression);
+                    if (conditionLiteral.value) {
+                        // condition is true, add if body to new body
+                        applyNode(ifClause);
+                        newBody.addAll(ifClause.body);
+                    } else if (ifClause.elseClause != null) {
+                        // condition is false and there is an else, add else body to new body
+                        applyNode(ifClause.elseClause);
+                        newBody.addAll(ifClause.elseClause.body);
+                    }
+                    // if condition is false and there is no else, just ignore the if-clause (which won't add it to the new body)
+                }
+                case StyleRule styleRule -> {
+                    // delete empty StyleRules after evaluating the body
+                    applyNode(styleRule);
+                    if (!styleRule.body.isEmpty()) {
+                        newBody.add(styleRule);
+                    }
+                }
+                case null, default -> {
+                    // for any other child, just check and add it to the nwe body
+                    applyNode(child);
+                    newBody.add(child);
+                }
+            }
+        }
+
+        return newBody;
+    }
+
     private Literal calculateExpressionValue(Expression expression) {
-        if (expression instanceof Literal) {
-            return (Literal) expression;
+        if (expression instanceof Literal literal) {
+            return literal;
         } else if (expression instanceof VariableReference variableReference) {
             String name = variableReference.name;
             for (HashMap<String, Literal> scope : variableValues) {
@@ -159,13 +168,11 @@ public class Evaluator implements Transform {
             boolean resultValue = calculateComparisonResult(comparison, leftLiteral, rightLiteral);
             return new BoolLiteral(resultValue);
         } else if (expression instanceof FunctionReference functionReference) {
-            // TODO: dont transform the actual function. this will break the next calls
             String functionName = functionReference.name;
             FunctionDefinition functionDefinition = availableFunctions.get(functionName);
 
             // create new scope for within the function
             HashMap<String, Literal> functionScope = new HashMap<>();
-
 
             for (int i = 0; i < functionDefinition.parameters.size(); i++) {
                 String parameterName = functionDefinition.parameters.get(i).name;
@@ -173,18 +180,22 @@ public class Evaluator implements Transform {
                 functionScope.put(parameterName, argumentValue);
             }
 
-            // temporarily replace
+            // temporarily replace the variableValues with the function scope
             IHANLinkedList<HashMap<String, Literal>> outerScope = variableValues;
             variableValues = new HANLinkedList<>();
             variableValues.addFirst(functionScope);
 
-            // execute the function body
-            for (ASTNode node : functionDefinition.body) {
-                applyNode(node);
-            }
+            // create a copy of the function body and solve that (to keep the original function body intact for future calls)
+            ArrayList<ASTNode> functionBodyCopy = new ArrayList<>(functionDefinition.body);
+            // solving will put all variables in the function scope, so the return value can be calculated correctly
+            createTransformedBody(functionBodyCopy);
 
-            // restore the outer scope
+            // restore the previous (outer)scope
             variableValues = outerScope;
+
+            // print all variables in the function scope for debugging
+            System.out.println("Function scope for " + functionName + ": " + functionScope
+                    + " (with return value: " + functionScope.get(functionDefinition.returnValue.expression) + ")");
 
             return calculateExpressionValue(functionDefinition.returnValue.expression);
         }
