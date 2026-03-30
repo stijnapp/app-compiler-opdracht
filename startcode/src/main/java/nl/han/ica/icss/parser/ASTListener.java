@@ -126,22 +126,14 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterLiteral(ICSSParser.LiteralContext ctx) {
-        Literal literal;
-        // Kind of the same deal as with the operation expression
-        // there are multiple types of literals, so we need to check which one it is
-        if (ctx.bool() != null) {
-            literal = new BoolLiteral(ctx.bool().getText().equals("TRUE"));
-        } else if (ctx.PIXELSIZE() != null) {
-            literal = new PixelLiteral(Integer.parseInt(ctx.PIXELSIZE().getText().replace("px", "")));
-        } else if (ctx.PERCENTAGE() != null) {
-            literal = new PercentageLiteral(Integer.parseInt(ctx.PERCENTAGE().getText().replace("%", "")));
-        } else if (ctx.SCALAR() != null) {
-            literal = new ScalarLiteral(Integer.parseInt(ctx.SCALAR().getText()));
-        } else if (ctx.COLOR() != null) {
-            literal = new ColorLiteral(ctx.COLOR().getText());
-        } else {
-            throw new RuntimeException("Unknown literal: " + ctx.getText() + " at line " + ctx.getStart().getLine() + ", position " + ctx.getStart().getCharPositionInLine());
-        }
+        Literal literal = switch (ctx.start.getType()){
+            case ICSSParser.TRUE, ICSSParser.FALSE -> new BoolLiteral(ctx.getText().equals("TRUE"));
+            case ICSSParser.PIXELSIZE -> new PixelLiteral(Integer.parseInt(ctx.getText().replace("px", "")));
+            case ICSSParser.PERCENTAGE -> new PercentageLiteral(Integer.parseInt(ctx.getText().replace("%", "")));
+            case ICSSParser.SCALAR -> new ScalarLiteral(Integer.parseInt(ctx.getText()));
+            case ICSSParser.COLOR -> new ColorLiteral(ctx.getText());
+            default -> throw new RuntimeException("Unknown literal: " + ctx.getText() + " at line " + ctx.getStart().getLine() + ", position " + ctx.getStart().getCharPositionInLine());
+        };
         currentContainer.peek().addChild(literal);
     }
 
