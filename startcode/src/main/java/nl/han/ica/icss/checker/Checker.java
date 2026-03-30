@@ -101,7 +101,7 @@ public class Checker {
         variableTypes.getFirst().put(name, varType);
     }
 
-    // CH01 + CH06: variables should be defined, and only used within their scope
+    // CH01 + CH06: variables should be defined, and only used within their scope or up
     private void validateVariableReference(VariableReference variableReference) {
         String name = variableReference.name;
 
