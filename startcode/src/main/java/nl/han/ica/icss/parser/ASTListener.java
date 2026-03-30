@@ -80,6 +80,18 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
+    public void enterInversionExpression(ICSSParser.InversionExpressionContext ctx) {
+        Inversion inversion = new Inversion();
+        currentContainer.peek().addChild(inversion);
+        currentContainer.push(inversion);
+    }
+
+    @Override
+    public void exitInversionExpression(ICSSParser.InversionExpressionContext ctx) {
+        currentContainer.pop();
+    }
+
+    @Override
     // OperationExpression is a subrule of expression, defined in the grammar with `#OperationExpression`
     // still, it has multiple operators (+, -, *), so we need to manually check which one it is.
     public void enterOperationExpression(ICSSParser.OperationExpressionContext ctx) {

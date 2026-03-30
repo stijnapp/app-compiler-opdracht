@@ -53,6 +53,7 @@ GREATER_EQUAL: '>=';
 LESSER_EQUAL: '<=';
 EQUAL: '==';
 NOT_EQUAL: '!=';
+NOT: '!';
 
 
 //--- PARSER: ---
@@ -67,7 +68,8 @@ selector    : ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration : prop=LOWER_IDENT COLON expression SEMICOLON;
 
 // expressions - left-recursive, so in order of precedence
-expression  : PAREN_OPEN expression PAREN_CLOSE #ParenthesizedExpression
+expression  : NOT expression #InversionExpression
+            | PAREN_OPEN expression PAREN_CLOSE #ParenthesizedExpression
             | expression op=MUL expression #OperationExpression
             | expression op=(PLUS | MIN) expression #OperationExpression
             | expression comp=(GREATER | LESSER | GREATER_EQUAL | LESSER_EQUAL | EQUAL | NOT_EQUAL) expression #ComparisonExpression

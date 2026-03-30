@@ -167,6 +167,9 @@ public class Evaluator implements Transform {
 
             boolean resultValue = calculateComparisonResult(comparison, leftLiteral, rightLiteral);
             return new BoolLiteral(resultValue);
+        } else if (expression instanceof Inversion inversion) {
+            Literal evaluatedLiteral = calculateExpressionValue(inversion.expression);
+            return new BoolLiteral(!((BoolLiteral) evaluatedLiteral).value);
         } else if (expression instanceof FunctionReference functionReference) {
             String functionName = functionReference.name;
             FunctionDefinition functionDefinition = availableFunctions.get(functionName);

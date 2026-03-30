@@ -245,6 +245,17 @@ public class Checker {
 
             // return type is always bool, so if no errors, return bool
             return ExpressionType.BOOL;
+        } else if (expression instanceof Inversion inversion) {
+            ExpressionType expressionType = getExpressionType(inversion.expression);
+
+            if (expressionType == null) return null;
+
+            // Inversions can only be applied to booleans, or expressions that resolve to a boolean
+            if (expressionType != ExpressionType.BOOL) {
+                inversion.setError("Inversion can only be applied to BOOL types. Type is: " + expressionType);
+                return null;
+            }
+            return ExpressionType.BOOL;
         } else if (expression instanceof FunctionReference reference) {
 
             // check if function exists
